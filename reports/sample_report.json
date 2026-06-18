@@ -1,0 +1,50 @@
+{
+  "scanned_at": "2026-06-18T10:00:00Z",
+  "workflow_count": 1,
+  "finding_count": 6,
+  "summary": {
+    "critical_count": 2,
+    "high_count": 3,
+    "medium_count": 1,
+    "low_count": 0,
+    "informational_count": 0
+  },
+  "findings": [
+    {
+      "workflow": "examples/vulnerable_workflow.yml",
+      "job_id": "build",
+      "step_name": "Checkout PR head",
+      "finding_type": "PwnRequest",
+      "severity": "Critical",
+      "title": "Pwn Request: pull_request_target checks out PR head branch",
+      "description": "Workflow is triggered by pull_request_target and job build checks out the PR contributor's code.",
+      "evidence": "trigger=pull_request_target, checkout ref=${{ github.event.pull_request.head.ref }}",
+      "remediation": "Never check out PR head code in pull_request_target workflows.",
+      "cwe": "CWE-913: Improper Control of Dynamically-Managed Code Resources"
+    },
+    {
+      "workflow": "examples/vulnerable_workflow.yml",
+      "job_id": "build",
+      "step_name": "Greet contributor",
+      "finding_type": "ScriptInjection",
+      "severity": "Critical",
+      "title": "Script injection via untrusted context expression",
+      "description": "Job build interpolates untrusted GitHub context data into a run step.",
+      "evidence": "${{ github.event.pull_request.title }}",
+      "remediation": "Use an intermediate environment variable instead of inline context expressions.",
+      "cwe": "CWE-78: OS Command Injection"
+    },
+    {
+      "workflow": "examples/vulnerable_workflow.yml",
+      "job_id": null,
+      "step_name": null,
+      "finding_type": "ExcessivePermissions",
+      "severity": "High",
+      "title": "Workflow-level permission: write-all",
+      "description": "The workflow grants write access to all scopes at the top level.",
+      "evidence": "permissions: write-all",
+      "remediation": "Set permissions: {} at the workflow level, then grant per-job permissions.",
+      "cwe": "CWE-250: Execution with Unnecessary Privileges"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+# GitHub Actions Security Sandbox Simulator: workflow security check template
+#
+# Copy this file to your repository at .github/workflows/ghass-check.yml
+# to automatically scan all workflows in your repo on every push.
+#
+# Requires: ghass binary available in PATH or installed via cargo install.
+
+name: Workflow Security Scan
+
+on:
+  push:
+    paths:
+      - ".github/workflows/**"
+  schedule:
+    - cron: "0 6 * * 1"  # every Monday at 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  ghass-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install ghass
+        run: cargo install --git https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox ghass-cli
+
+      - name: Scan workflows
+        run: ghass scan .github/workflows --format sarif --output ghass-report.sarif
+
+      - name: Upload SARIF to GitHub Advanced Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ghass-report.sarif
+          category: ghass
+
+      - name: Print summary
+        if: always()
+        run: ghass scan .github/workflows --format table

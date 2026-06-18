@@ -1,0 +1,37 @@
+# This workflow is intentionally vulnerable. Use it to test ghass detection.
+# Run: ghass scan examples/vulnerable_workflow.yml
+#
+# Expected findings:
+#   CRITICAL  Script Injection (github.event.pull_request.title in run step)
+#   CRITICAL  Pwn Request (pull_request_target + PR head checkout)
+#   HIGH      Excessive Permissions (write-all)
+#   HIGH      Secret Exposure (secret passed to third-party action)
+#   HIGH      Unpinned Action (build-action@main)
+#   MEDIUM    Unpinned Action (actions/checkout@v4)
+#   MEDIUM    Self-Hosted Runner
+
+name: Vulnerable CI Example
+
+on:
+  pull_request_target:
+
+permissions: write-all
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Greet contributor
+        run: echo "Hello, you submitted ${{ github.event.pull_request.title }}"
+
+      - name: Build with third-party action
+        uses: some-org/build-action@main
+        with:
+          api-key: ${{ secrets.BUILD_API_KEY }}
+          token: ${{ secrets.GITHUB_TOKEN }}

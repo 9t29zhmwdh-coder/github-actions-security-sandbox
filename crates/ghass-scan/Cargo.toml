@@ -1,0 +1,11 @@
+[package]
+name = "ghass-scan"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ghass-core = { path = "../ghass-core" }
+serde_yaml = "0.9"
+anyhow = "1"
+walkdir = "2"
+chrono = { version = "0.4", features = ["serde"] }

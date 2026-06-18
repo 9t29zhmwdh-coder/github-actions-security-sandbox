@@ -1,0 +1,34 @@
+# Hardened version of vulnerable_workflow.yml showing all remediations applied.
+# Run: ghass scan examples/hardened_workflow.yml
+#
+# Expected findings: none (or informational only for env-var secret usage)
+
+name: Hardened CI Example
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout base branch only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Greet contributor
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "Hello, you submitted $PR_TITLE"
+
+      - name: Build with pinned third-party action
+        uses: some-org/build-action@a4d7a2b1c3e9f0823456789abcdef0123456789ab # v2.1.0
+        with:
+          ref: ${{ github.sha }}

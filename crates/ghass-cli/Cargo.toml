@@ -1,0 +1,15 @@
+[package]
+name = "ghass-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ghass"
+path = "src/main.rs"
+
+[dependencies]
+ghass-core = { path = "../ghass-core" }
+ghass-scan = { path = "../ghass-scan" }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+tabled = "0.15"

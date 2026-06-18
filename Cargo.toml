@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/ghass-core", "crates/ghass-scan", "crates/ghass-cli"]
+resolver = "2"
