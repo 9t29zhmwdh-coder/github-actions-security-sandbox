@@ -33,4 +33,6 @@
 - [ ] VS Code extension with inline diagnostics
 - [ ] Pre-commit hook support
 - [ ] Dependabot-compatible SHA update suggestions
+- [ ] GitHub Advanced Security (GHAS) native SARIF upload via code scanning API
+- [ ] Azure DevOps pipeline task wrapper
 - [ ] Documented stable public API for `ghass-scan` and `ghass-core`

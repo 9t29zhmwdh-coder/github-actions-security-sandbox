@@ -7,6 +7,8 @@
 
 **Statische Analyse und Angriffssimulation fuer GitHub Actions Workflows. Erkennt Injection-Vektoren, Supply-Chain-Risiken, ueberprivilegierte Berechtigungen und Secret-Exposition. Generiert priorisierte Findings mit konkreten Behebungshinweisen.**
 
+Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension) Grundsaetzen. Der SARIF 2.1.0-Output integriert sich nativ in [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) fuer Enterprise Security Workflows.
+
 [![Rust](https://img.shields.io/badge/Rust-1.78+-orange?logo=rust)](https://www.rust-lang.org)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Security-blue?logo=githubactions)](https://docs.github.com/en/actions)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey?logo=linux)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox)
