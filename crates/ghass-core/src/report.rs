@@ -94,15 +94,22 @@ th{{background:#f2f2f2}}tr:hover{{background:#f5f5f5}}</style></head>
 }
 
 pub fn to_sarif_stub(report: &ScanReport) -> String {
+    use std::collections::HashSet;
+    let mut seen_rule_ids: HashSet<String> = HashSet::new();
     let rules: Vec<serde_json::Value> = report
         .findings
         .iter()
-        .map(|f| {
-            serde_json::json!({
-                "id": format!("{:?}", f.finding_type),
-                "shortDescription": { "text": f.title },
-                "help": { "text": f.remediation },
-            })
+        .filter_map(|f| {
+            let id = format!("{:?}", f.finding_type);
+            if seen_rule_ids.insert(id.clone()) {
+                Some(serde_json::json!({
+                    "id": id,
+                    "shortDescription": { "text": f.title },
+                    "help": { "text": f.remediation },
+                }))
+            } else {
+                None
+            }
         })
         .collect();
 
