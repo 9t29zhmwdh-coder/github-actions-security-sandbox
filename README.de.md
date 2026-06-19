@@ -5,9 +5,9 @@
 
 > 🇬🇧 [English Version](README.md)
 
-**Statische Analyse und Angriffssimulation fuer GitHub Actions Workflows. Erkennt Injection-Vektoren, Supply-Chain-Risiken, ueberprivilegierte Berechtigungen und Secret-Exposition. Generiert priorisierte Findings mit konkreten Behebungshinweisen.**
+**Statische Analyse und Angriffssimulation für GitHub Actions Workflows. Erkennt Injection-Vektoren, Supply-Chain-Risiken, ueberprivilegierte Berechtigungen und Secret-Exposition. Generiert priorisierte Findings mit konkreten Behebungshinweisen.**
 
-Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension) Grundsaetzen. Der SARIF 2.1.0-Output integriert sich nativ in [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) fuer Enterprise Security Workflows.
+Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension) Grundsaetzen. Der SARIF 2.1.0-Output integriert sich nativ in [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) für Enterprise Security Workflows.
 
 [![CI](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions) ![Platform](https://img.shields.io/badge/Platform-Windows_%7C_Ubuntu-lightgrey) ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white) ![AI | Claude Code](https://img.shields.io/badge/AI-Claude_Code-black?logo=anthropic&logoColor=white) ![AI | Copilot](https://img.shields.io/badge/AI-Copilot-black?logo=github&logoColor=white)
 
@@ -44,7 +44,7 @@ cargo build --release
 # Findings als Markdown exportieren
 ./target/release/ghass scan .github/workflows --format md --output report.md
 
-# SARIF fuer GitHub Advanced Security exportieren
+# SARIF für GitHub Advanced Security exportieren
 ./target/release/ghass scan .github/workflows --format sarif --output results.sarif
 
 # Nur High und hoeher anzeigen
@@ -60,7 +60,7 @@ cargo build --release
 | Tabelle (Standard) | `--format table` | Interaktive Terminal-Auswertung |
 | JSON | `--format json` | CI-Pipelines, Ticketsystem-Integration |
 | Markdown | `--format md` | PR-Kommentare, Confluence, interne Berichte |
-| HTML | `--format html` | Browser-Berichte fuer Stakeholder |
+| HTML | `--format html` | Browser-Berichte für Stakeholder |
 | SARIF | `--format sarif` | GitHub Advanced Security, Code Scanning |
 
 ---
