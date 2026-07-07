@@ -5,23 +5,29 @@
 
 > 🇬🇧 [English Version](README.md)
 
-**Statische Analyse und Angriffssimulation für GitHub Actions Workflows. Erkennt Injection-Vektoren, Supply-Chain-Risiken, ueberprivilegierte Berechtigungen und Secret-Exposition. Generiert priorisierte Findings mit konkreten Behebungshinweisen.**
+**Statische Analyse und Angriffssimulation für GitHub Actions Workflows. Erkennt Injection-Vektoren, Supply-Chain-Risiken, überprivilegierte Berechtigungen und Secret-Exposition. Generiert priorisierte Findings mit konkreten Behebungshinweisen.**
 
-Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension) Grundsaetzen. Der SARIF 2.1.0-Output integriert sich nativ in [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) für Enterprise Security Workflows.
+Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension) Grundsätzen. Der SARIF 2.1.0-Output integriert sich nativ in [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) für Enterprise Security Workflows.
 
 [![CI](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions) ![Platform](https://img.shields.io/badge/Platform-Windows_%7C_Ubuntu-lightgrey) ![Rust](https://img.shields.io/badge/Rust-CE422B?logo=rust&logoColor=white) ![AI | Claude Code](https://img.shields.io/badge/AI-Claude_Code-black?logo=anthropic&logoColor=white) ![AI | Copilot](https://img.shields.io/badge/AI-Copilot-black?logo=github&logoColor=white) [![Release](https://img.shields.io/github/v/release/9t29zhmwdh-coder/github-actions-security-sandbox?color=3F8E7E)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/releases) [![License](https://img.shields.io/github/license/9t29zhmwdh-coder/github-actions-security-sandbox?color=lightgrey)](LICENSE)
 
+> **So läuft das:** Das ist ein Kommandozeilen-Tool, keine Desktop-App und kein Server. `ghass scan` läuft einmal gegen lokale YAML-Dateien und beendet sich; es gibt keinen Installer und keinen Hintergrundprozess. Es kontaktiert nie GitHub und führt keinen der gescannten Workflows aus, es liest nur die YAML.
+
+![github-actions-security-sandbox](docs/screenshot.png)
+
 ---
+
+**In der Praxis:** Zeig auf deinen `.github/workflows`-Ordner und bekomm eine priorisierte Tabelle echter, ausnutzbarer Fehlkonfigurationen (Script-Injection, Pwn Requests, ungepinnte Actions, Secret-Exposition) direkt im Terminal, oder als SARIF-Export für GitHub Advanced Security.
 
 ## Erkannte Angriffsvektoren
 
 | Angriffsvektor | Schweregrad | CWE |
 |---|---|---|
-| Script-Injection via unbegruengte Context-Expressions | Critical | CWE-78 |
+| Script-Injection via nicht vertrauenswürdige Context-Expressions | Critical | CWE-78 |
 | Pwn Request (pull_request_target + PR-Head-Checkout) | Critical | CWE-913 |
-| Ueberprivilegierte Berechtigungen (write-all, contents: write) | High | CWE-250 |
+| Überprivilegierte Berechtigungen (write-all, contents: write) | High | CWE-250 |
 | Secrets an Drittanbieter-Actions weitergegeben | High | CWE-522 |
-| Nicht-gepinnte Actions (veraenderlicher Branch-Verweis) | High | CWE-829 |
+| Nicht-gepinnte Actions (veränderlicher Branch-Verweis) | High | CWE-829 |
 | Nicht-gepinnte Actions (semantischer Versions-Tag) | Medium | CWE-829 |
 | Self-Hosted Runner ohne Isolation | Medium | CWE-653 |
 | Secret-Werte in Umgebungsvariablen | Informational | CWE-532 |
@@ -47,9 +53,15 @@ cargo build --release
 # SARIF für GitHub Advanced Security exportieren
 ./target/release/ghass scan .github/workflows --format sarif --output results.sarif
 
-# Nur High und hoeher anzeigen
+# Nur High und höher anzeigen
 ./target/release/ghass scan .github/workflows --min-severity high
 ```
+
+---
+
+## Deinstallation / Datenbereinigung
+
+Lösche das `target/` Build-Verzeichnis und exportierte Report-Dateien (`report.md`, `results.sarif` usw.). Das Tool schreibt sonst nirgendwo hin, es liest nur Workflow-YAML-Dateien.
 
 ---
 
@@ -69,11 +81,11 @@ cargo build --release
 
 | Schweregrad | Beschreibung |
 |---|---|
-| Critical | Unmittelbares Risiko zur Code-Ausfuehrung oder vollstaendiger Secret-Exposition. Vor dem Merge beheben. |
+| Critical | Unmittelbares Risiko zur Code-Ausführung oder vollständiger Secret-Exposition. Vor dem Merge beheben. |
 | High | Erhebliches Risiko, das mit moderatem Aufwand ausgenutzt werden kann. |
-| Medium | Erfordert spezifische Bedingungen zur Ausnutzung; im naechsten Sprint beheben. |
+| Medium | Erfordert spezifische Bedingungen zur Ausnutzung; im nächsten Sprint beheben. |
 | Low | Defense-in-depth-Verbesserung mit begrenzter direkter Auswirkung. |
-| Informational | Korrektes Nutzungsmuster; zur Vollstaendigkeit pruefen. |
+| Informational | Korrektes Nutzungsmuster; zur Vollständigkeit prüfen. |
 
 ---
 
@@ -85,13 +97,13 @@ Das Tool ist als Rust-Workspace mit drei Crates aufgebaut:
 |---|---|
 | `ghass-core` | Datenmodelle, Finding-Typen, Report-Serialisierung (JSON, Markdown, HTML, SARIF) |
 | `ghass-scan` | YAML-Workflow-Parser, alle Security-Analyzer |
-| `ghass-cli` | CLI-Binaer (`ghass`), Ausgabe-Formatierung, Schweregrad-Filter |
+| `ghass-cli` | CLI-Binär (`ghass`), Ausgabe-Formatierung, Schweregrad-Filter |
 
 ---
 
 ## Keine Credentials erforderlich
 
-Dieses Tool fuehrt ausschliesslich lokale statische Analyse durch. Es liest YAML-Dateien von der Festplatte. Es werden keine API-Credentials benoetigt oder verwendet.
+Dieses Tool führt ausschliesslich lokale statische Analyse durch. Es liest YAML-Dateien von der Festplatte. Es werden keine API-Credentials benötigt oder verwendet.
 
 ---
 
