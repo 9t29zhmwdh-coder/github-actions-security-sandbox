@@ -11,7 +11,13 @@ Aligned with [Microsoft Security DevOps](https://learn.microsoft.com/en-us/azure
 
 [![CI](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions) ![Platform](https://img.shields.io/badge/Platform-Windows_%7C_Ubuntu-lightgrey) ![Rust](https://img.shields.io/badge/Rust-CE422B?logo=rust&logoColor=white) ![AI | Claude Code](https://img.shields.io/badge/AI-Claude_Code-black?logo=anthropic&logoColor=white) ![AI | Copilot](https://img.shields.io/badge/AI-Copilot-black?logo=github&logoColor=white) [![Release](https://img.shields.io/github/v/release/9t29zhmwdh-coder/github-actions-security-sandbox?color=3F8E7E)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/releases) [![License](https://img.shields.io/github/license/9t29zhmwdh-coder/github-actions-security-sandbox?color=lightgrey)](LICENSE)
 
+> **How it runs:** This is a command-line tool, not a desktop app and not a server. `ghass scan` runs once against local YAML files and exits; there is no installer and no background process. It never contacts GitHub or runs any of the scanned workflows, it only reads the YAML.
+
+![github-actions-security-sandbox](docs/screenshot.png)
+
 ---
+
+**In practice:** point it at your `.github/workflows` folder and get a prioritized table of real, exploitable misconfigurations (script injection, pwn requests, unpinned actions, secret exposure) straight in your terminal, or export as SARIF for GitHub Advanced Security.
 
 ## Detected Attack Vectors
 
@@ -50,6 +56,12 @@ cargo build --release
 # Show only high severity and above
 ./target/release/ghass scan .github/workflows --min-severity high
 ```
+
+---
+
+## Uninstall / Cleanup
+
+Delete the `target/` build directory and any exported report files (`report.md`, `results.sarif`, etc.). The tool never writes anywhere else, it only reads workflow YAML files.
 
 ---
 
