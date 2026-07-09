@@ -34,6 +34,15 @@ Aligned with [Microsoft Security DevOps](https://learn.microsoft.com/en-us/azure
 
 ---
 
+## Requirements
+
+- Rust (stable toolchain, edition 2021) — install via https://rustup.rs
+- Cargo (comes bundled with Rust)
+- Git (optional, only needed if you clone instead of downloading the ZIP)
+- No GitHub token, Docker, or other credentials needed — the tool only reads local YAML files
+
+> 🌱 New here? → [Step-by-step guide for beginners](GETTING_STARTED.md)
+
 ## Quick Start
 
 ```bash
