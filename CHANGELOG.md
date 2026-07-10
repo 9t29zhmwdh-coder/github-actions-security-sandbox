@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3] (2026-07-10)
+
+### Fixed
+
+- Removed em-dashes from README.md, replaced with colons for readability
+- Changed the language-switch link from a blockquote to plain text to match the rest of the portfolio
+
 ## [0.1.2] (2026-07-10)
 
 ### Changed

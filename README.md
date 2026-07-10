@@ -3,7 +3,7 @@
   <h1>GitHub Actions Security Sandbox Simulator</h1>
 </div>
 
-> 🇩🇪 [Deutsche Version](README.de.md)
+🇩🇪 [Deutsche Version](README.de.md)
 
 **Static analysis and attack simulation for GitHub Actions workflows. Detects injection vectors, supply chain risks, excessive permissions and secret exposure. Generates prioritized findings with remediation guidance.**
 
@@ -40,10 +40,10 @@ Aligned with [Microsoft Security DevOps](https://learn.microsoft.com/en-us/azure
 
 ## Requirements
 
-- Rust (stable toolchain, edition 2021) — install via https://rustup.rs
+- Rust (stable toolchain, edition 2021): install via https://rustup.rs
 - Cargo (comes bundled with Rust)
 - Git (optional, only needed if you clone instead of downloading the ZIP)
-- No GitHub token, Docker, or other credentials needed — the tool only reads local YAML files
+- No GitHub token, Docker, or other credentials needed: the tool only reads local YAML files
 
 ## Quick Start
 
