@@ -17,6 +17,10 @@ Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-d
 
 ---
 
+> 🌱 Neu hier? → [Schritt-für-Schritt-Anleitung für Einsteiger](GETTING_STARTED.md)
+
+---
+
 **In der Praxis:** Zeig auf deinen `.github/workflows`-Ordner und bekomm eine priorisierte Tabelle echter, ausnutzbarer Fehlkonfigurationen (Script-Injection, Pwn Requests, ungepinnte Actions, Secret-Exposition) direkt im Terminal, oder als SARIF-Export für GitHub Advanced Security.
 
 ## Erkannte Angriffsvektoren

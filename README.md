@@ -17,6 +17,10 @@ Aligned with [Microsoft Security DevOps](https://learn.microsoft.com/en-us/azure
 
 ---
 
+> 🌱 New here? → [Step-by-step guide for beginners](GETTING_STARTED.md)
+
+---
+
 **In practice:** point it at your `.github/workflows` folder and get a prioritized table of real, exploitable misconfigurations (script injection, pwn requests, unpinned actions, secret exposure) straight in your terminal, or export as SARIF for GitHub Advanced Security.
 
 ## Detected Attack Vectors
@@ -40,8 +44,6 @@ Aligned with [Microsoft Security DevOps](https://learn.microsoft.com/en-us/azure
 - Cargo (comes bundled with Rust)
 - Git (optional, only needed if you clone instead of downloading the ZIP)
 - No GitHub token, Docker, or other credentials needed — the tool only reads local YAML files
-
-> 🌱 New here? → [Step-by-step guide for beginners](GETTING_STARTED.md)
 
 ## Quick Start
 
