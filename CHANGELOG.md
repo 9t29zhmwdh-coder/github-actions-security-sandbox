@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.4] (2026-07-11)
+
+### Fixed
+
+- Updated SHA-pinned actions/checkout and Swatinem/rust-cache to their latest major versions in CI, since GitHub is deprecating the Node.js 20 runtime and the previously pinned checkout version (v4.2.2) was being forced onto Node 24 and crashing during post-run cleanup.
+
 ## [0.1.3] (2026-07-10)
 
 ### Fixed
