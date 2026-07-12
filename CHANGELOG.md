@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.8] (2026-07-12)
+
+### Fixed
+
+- Removed em-dashes from GETTING_STARTED.md. Swiss German orthography rule.
+
 ## [0.1.7] (2026-07-12)
 
 ### Security
