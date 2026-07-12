@@ -1,20 +1,22 @@
 # Security Policy
 
-## Supported Versions
-
-| Version | Supported |
-|---|---|
-| 0.1.x | Yes |
-
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities by opening a GitHub issue with the label `security`.
+**Do NOT open a public GitHub issue for security vulnerabilities.**
 
-Do not include exploit code or proof-of-concept payloads in public issues. Describe the vulnerability type, affected component, and potential impact. A response within 72 hours is the target.
+Instead, report it via [GitHub Security Advisory](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/security/advisories/new) or contact the maintainer via the GitHub profile.
+
+Include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+A response within **48 hours** is the target, and I will work to resolve the issue promptly.
 
 ## False Positive Handling
 
-If ghass produces a false positive for a finding in your repository, open an issue with:
+If ghass produces a false positive for a finding in your repository, open a regular (non-security) GitHub issue with:
 
 - The workflow file content (sanitized)
 - The finding type and evidence string
@@ -22,4 +24,15 @@ If ghass produces a false positive for a finding in your repository, open an iss
 
 ## Supply Chain Security
 
-All actions used in the CI pipeline are pinned to specific commit SHAs. Dependencies are managed via `Cargo.lock`. The `Cargo.lock` file is committed to the repository.
+- All GitHub Actions used in the CI pipeline are pinned to a specific commit SHA, not a mutable tag or branch.
+- Dependencies are managed via `Cargo.lock`, which is committed to the repository for reproducible builds.
+- `cargo audit` (or equivalent) is run in CI to catch known-vulnerable dependencies.
+
+## Supported Versions
+
+| Version | Supported |
+|---------|-----------|
+| Latest  | ✅ Yes    |
+| Older   | ❌ No     |
+
+Security fixes are only applied to the latest release.
