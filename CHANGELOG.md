@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7] (2026-07-12)
+
+### Security
+
+- Fixed two inaccurate claims in SECURITY.md: `dtolnay/rust-toolchain` was pinned to the mutable `stable` tag, not a commit SHA as the policy claimed, and `Cargo.lock` was gitignored, not committed as claimed. Both are now fixed for real: the action is pinned to its current `stable` commit, and `Cargo.lock` is committed for reproducible builds.
+- Switched vulnerability reporting from a public GitHub issue label to GitHub Security Advisories (private reporting), matching the portfolio's standard practice.
+- Added a `cargo audit` job to CI to actually catch known-vulnerable dependencies, closing the gap behind the policy's supply-chain security claim.
+
 ## [0.1.6] (2026-07-12)
 
 ### Added
