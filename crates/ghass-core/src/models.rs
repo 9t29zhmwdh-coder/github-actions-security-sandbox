@@ -77,19 +77,21 @@ pub enum FindingType {
     SecretExposure,
     SelfHostedRunner,
     PwnRequest,
+    /// Matched a user-authored rule from a custom rules YAML file; carries the rule id.
+    Custom(String),
 }
 
 impl std::fmt::Display for FindingType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            FindingType::ScriptInjection => "Script Injection",
-            FindingType::UnpinnedAction => "Unpinned Action",
-            FindingType::ExcessivePermissions => "Excessive Permissions",
-            FindingType::SecretExposure => "Secret Exposure",
-            FindingType::SelfHostedRunner => "Self-Hosted Runner",
-            FindingType::PwnRequest => "Pwn Request",
-        };
-        write!(f, "{}", s)
+        match self {
+            FindingType::ScriptInjection => write!(f, "Script Injection"),
+            FindingType::UnpinnedAction => write!(f, "Unpinned Action"),
+            FindingType::ExcessivePermissions => write!(f, "Excessive Permissions"),
+            FindingType::SecretExposure => write!(f, "Secret Exposure"),
+            FindingType::SelfHostedRunner => write!(f, "Self-Hosted Runner"),
+            FindingType::PwnRequest => write!(f, "Pwn Request"),
+            FindingType::Custom(id) => write!(f, "Custom Rule: {}", id),
+        }
     }
 }
 

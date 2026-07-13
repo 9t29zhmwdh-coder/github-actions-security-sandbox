@@ -1,0 +1,39 @@
+# Example custom rule policy for `ghass scan --rules examples/custom-rules.yml`.
+#
+# Each rule matches at exactly one granularity, inferred automatically from
+# which condition it uses: `uses_matches`/`run_contains`/`env_key_contains`
+# match per step, `runs_on_contains`/`job_write_all` match per job, and
+# everything else (`trigger_equals`, `workflow_write_all`) matches once per
+# workflow. `all`/`any`/`not` combine conditions.
+rules:
+  - id: no-docker-actions
+    title: "Docker-based actions are not allowed by policy"
+    severity: Medium
+    description: >
+      Organization policy forbids `uses: docker://...` steps because the
+      image supply chain cannot be pinned the same way a GitHub Action can.
+    remediation: "Replace with a pinned composite or JavaScript action."
+    match:
+      uses_matches: "^docker://"
+
+  - id: no-writeall-on-self-hosted
+    title: "write-all permissions on a self-hosted runner"
+    severity: Critical
+    description: >
+      A job that runs on a self-hosted runner and also requests write-all
+      permissions combines the two riskiest properties a job can have:
+      persistent, network-reachable compute and unrestricted repo write access.
+    remediation: "Scope the job's permissions down, or move it to a GitHub-hosted runner."
+    cwe: "CWE-250: Execution with Unnecessary Privileges"
+    match:
+      all:
+        - runs_on_contains: "self-hosted"
+        - job_write_all
+
+  - id: no-manual-dispatch
+    title: "workflow_dispatch trigger is disallowed for this repository"
+    severity: Low
+    description: "This repository's policy requires all runs to be triggered by CI events, not manually."
+    remediation: "Remove the workflow_dispatch trigger, or move this workflow to a repo where manual runs are allowed."
+    match:
+      trigger_equals: "workflow_dispatch"

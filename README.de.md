@@ -59,7 +59,37 @@ cargo build --release
 
 # Nur High und höher anzeigen
 ./target/release/ghass scan .github/workflows --min-severity high
+
+# Scan mit zusätzlicher organisationsspezifischer Regel-Policy
+./target/release/ghass scan .github/workflows --rules examples/custom-rules.yml
 ```
+
+---
+
+## Eigene Regeln (Custom Rules)
+
+Neben den eingebauten Analysern kann `ghass` eigene Policy-Regeln aus einer YAML-Datei auswerten, übergeben via `--rules`. Jede Regel matcht automatisch auf Step-, Job- oder Workflow-Ebene, abgeleitet davon, welche Bedingung sie verwendet:
+
+```yaml
+rules:
+  - id: no-docker-actions
+    title: "Docker-basierte Actions sind per Policy nicht erlaubt"
+    severity: Medium
+    description: "Die Organisationsrichtlinie verbietet uses: docker://... Steps."
+    remediation: "Durch eine gepinnte Composite- oder JavaScript-Action ersetzen."
+    match:
+      uses_matches: "^docker://"
+
+  - id: no-writeall-on-self-hosted
+    title: "write-all-Berechtigung auf einem Self-Hosted Runner"
+    severity: Critical
+    match:
+      all:
+        - runs_on_contains: "self-hosted"
+        - job_write_all
+```
+
+Verfügbare Bedingungen: `uses_matches` (Regex gegen `uses` eines Steps), `run_contains`, `env_key_contains` (Step-Ebene), `runs_on_contains`, `job_write_all` (Job-Ebene), `trigger_equals`, `workflow_write_all` (Workflow-Ebene), sowie `all`, `any` und `not` zum Kombinieren. Treffer aus Custom Rules erscheinen in jedem Ausgabeformat neben den eingebauten Findings, markiert mit `Custom Rule: <id>`. Ein vollständiges Beispiel steht in `examples/custom-rules.yml`.
 
 ---
 

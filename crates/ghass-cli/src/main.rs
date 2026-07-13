@@ -7,7 +7,7 @@ use tabled::{Table, Tabled};
 #[derive(Parser)]
 #[command(
     name = "ghass",
-    version = "0.1.0",
+    version,
     author = "RayStudio",
     about = "GitHub Actions Security Sandbox Simulator: static workflow analysis and attack simulation"
 )]
@@ -27,6 +27,8 @@ enum Command {
         output: Option<PathBuf>,
         #[arg(long, default_value = "low", help = "Minimum severity: critical, high, medium, low, info")]
         min_severity: String,
+        #[arg(long, help = "Path to a custom rules YAML file (org-specific checks, see README)")]
+        rules: Option<PathBuf>,
     },
 }
 
@@ -51,8 +53,13 @@ fn main() -> Result<()> {
             format,
             output,
             min_severity,
+            rules,
         } => {
-            let mut scan = ghass_scan::scan_path(&path)?;
+            let ruleset = match &rules {
+                Some(rules_path) => Some(ghass_core::rules::RuleSet::load(rules_path)?),
+                None => None,
+            };
+            let mut scan = ghass_scan::scan_path(&path, ruleset.as_ref())?;
 
             let min_score = parse_severity_score(&min_severity);
             scan.findings.retain(|f| f.severity.score() >= min_score);
