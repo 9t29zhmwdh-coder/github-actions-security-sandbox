@@ -66,7 +66,37 @@ cargo build --release
 
 # Show only high severity and above
 ./target/release/ghass scan .github/workflows --min-severity high
+
+# Scan with an additional org-specific rule policy
+./target/release/ghass scan .github/workflows --rules examples/custom-rules.yml
 ```
+
+---
+
+## Custom Rules
+
+Beyond the built-in analyzers, `ghass` can evaluate your own policy rules from a YAML file passed via `--rules`. Each rule matches at the step, job, or workflow level, inferred automatically from which condition it uses:
+
+```yaml
+rules:
+  - id: no-docker-actions
+    title: "Docker-based actions are not allowed by policy"
+    severity: Medium
+    description: "Org policy forbids uses: docker://... steps."
+    remediation: "Replace with a pinned composite or JavaScript action."
+    match:
+      uses_matches: "^docker://"
+
+  - id: no-writeall-on-self-hosted
+    title: "write-all permissions on a self-hosted runner"
+    severity: Critical
+    match:
+      all:
+        - runs_on_contains: "self-hosted"
+        - job_write_all
+```
+
+Available conditions: `uses_matches` (regex against a step's `uses`), `run_contains`, `env_key_contains` (step-level), `runs_on_contains`, `job_write_all` (job-level), `trigger_equals`, `workflow_write_all` (workflow-level), plus `all`, `any`, and `not` to combine them. Matches from custom rules appear in every output format alongside the built-in findings, tagged `Custom Rule: <id>`. See `examples/custom-rules.yml` for a complete example.
 
 ---
 

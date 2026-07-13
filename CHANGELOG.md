@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0] (2026-07-13)
+
+### Added
+
+- Custom rule engine: `ghass scan --rules <file.yml>` evaluates org-specific policy rules from a YAML file alongside the built-in analyzers. Each rule matches at step, job, or workflow level (inferred from which condition it uses) via `uses_matches`, `run_contains`, `env_key_contains`, `runs_on_contains`, `job_write_all`, `trigger_equals`, `workflow_write_all`, and the combinators `all`/`any`/`not`. Matches show up in every existing output format tagged `Custom Rule: <id>`. See the new "Custom Rules" README section and `examples/custom-rules.yml`.
+- This closes one of the two explicit blockers in this repo's Dual-Licensing Readiness assessment (see ROADMAP.md); native GHAS SARIF upload via the code scanning API remains open and needs live GitHub API access.
+
+### Fixed
+
+- `ghass --version` now reads the crate version from Cargo.toml instead of a hardcoded string that had drifted out of sync with actual releases.
+
 ## [0.1.8] (2026-07-12)
 
 ### Fixed

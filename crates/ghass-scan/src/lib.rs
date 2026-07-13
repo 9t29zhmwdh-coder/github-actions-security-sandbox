@@ -3,13 +3,17 @@ pub mod parser;
 
 use anyhow::Result;
 use ghass_core::models::{Finding, FindingSummary, ScanReport, Severity};
+use ghass_core::rules::RuleSet;
 use std::path::Path;
 use walkdir::WalkDir;
 
-pub fn scan_path(path: &Path) -> Result<ScanReport> {
+pub fn scan_path(path: &Path, custom_rules: Option<&RuleSet>) -> Result<ScanReport> {
     let workflows = collect_workflows(path)?;
 
-    let mut findings: Vec<Finding> = workflows.iter().flat_map(analyzers::run_all).collect();
+    let mut findings: Vec<Finding> = workflows
+        .iter()
+        .flat_map(|wf| analyzers::run_all(wf, custom_rules))
+        .collect();
 
     findings.sort_by_key(|f| std::cmp::Reverse(f.severity.score()));
 
