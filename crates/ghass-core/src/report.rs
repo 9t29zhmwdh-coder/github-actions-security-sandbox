@@ -172,3 +172,135 @@ fn html_escape(s: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{Finding, FindingSummary, FindingType};
+    use chrono::{TimeZone, Utc};
+
+    fn sample_finding() -> Finding {
+        Finding {
+            workflow: "wf.yml".to_string(),
+            job_id: Some("build".to_string()),
+            step_name: Some("run".to_string()),
+            finding_type: FindingType::ScriptInjection,
+            severity: Severity::Critical,
+            title: "Injectable".to_string(),
+            description: "desc <b>with html</b>".to_string(),
+            evidence: "some evidence".to_string(),
+            remediation: "fix it".to_string(),
+            cwe: Some("CWE-78".to_string()),
+        }
+    }
+
+    fn report_with(findings: Vec<Finding>) -> ScanReport {
+        ScanReport {
+            scanned_at: Utc.with_ymd_and_hms(2026, 7, 15, 12, 0, 0).unwrap(),
+            workflow_count: 1,
+            finding_count: findings.len(),
+            summary: FindingSummary {
+                critical_count: findings
+                    .iter()
+                    .filter(|f| f.severity == Severity::Critical)
+                    .count(),
+                ..Default::default()
+            },
+            findings,
+        }
+    }
+
+    #[test]
+    fn to_json_round_trips_finding_count() {
+        let report = report_with(vec![sample_finding()]);
+
+        let json = to_json(&report).unwrap();
+        let parsed: ScanReport = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.finding_count, 1);
+        assert_eq!(parsed.findings[0].title, "Injectable");
+    }
+
+    #[test]
+    fn to_markdown_includes_finding_details() {
+        let report = report_with(vec![sample_finding()]);
+
+        let md = to_markdown(&report);
+
+        // NOTE: finding.title is not currently rendered anywhere in the markdown
+        // output (only severity/type/workflow/job/step/evidence/description/
+        // remediation/cwe are) -- this test documents actual behavior, it does
+        // not assert the title is present.
+        assert!(md.contains("wf.yml"));
+        assert!(md.contains("some evidence"));
+        assert!(md.contains("fix it"));
+        assert!(md.contains("CWE-78"));
+        assert!(md.contains("| Critical | 1 |"));
+    }
+
+    #[test]
+    fn to_markdown_with_no_findings_says_so() {
+        let report = report_with(vec![]);
+
+        let md = to_markdown(&report);
+
+        assert!(md.contains("No findings."));
+    }
+
+    #[test]
+    fn to_html_stub_escapes_finding_title() {
+        let mut finding = sample_finding();
+        finding.title = "<script>alert(1)</script>".to_string();
+        let report = report_with(vec![finding]);
+
+        let html = to_html_stub(&report);
+
+        assert!(!html.contains("<script>alert(1)</script>"));
+        assert!(html.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn to_sarif_stub_produces_valid_json_with_expected_shape() {
+        let report = report_with(vec![sample_finding()]);
+
+        let sarif = to_sarif_stub(&report);
+        let value: serde_json::Value = serde_json::from_str(&sarif).unwrap();
+
+        assert_eq!(value["version"], "2.1.0");
+        let results = value["runs"][0]["results"].as_array().unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0]["level"], "error");
+    }
+
+    #[test]
+    fn to_sarif_stub_deduplicates_rules_by_finding_type() {
+        let report = report_with(vec![sample_finding(), sample_finding()]);
+
+        let sarif = to_sarif_stub(&report);
+        let value: serde_json::Value = serde_json::from_str(&sarif).unwrap();
+
+        let rules = value["runs"][0]["tool"]["driver"]["rules"]
+            .as_array()
+            .unwrap();
+        assert_eq!(rules.len(), 1);
+        let results = value["runs"][0]["results"].as_array().unwrap();
+        assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn sarif_level_maps_severity_correctly() {
+        assert_eq!(sarif_level(&Severity::Critical), "error");
+        assert_eq!(sarif_level(&Severity::High), "error");
+        assert_eq!(sarif_level(&Severity::Medium), "warning");
+        assert_eq!(sarif_level(&Severity::Low), "note");
+        assert_eq!(sarif_level(&Severity::Informational), "note");
+    }
+
+    #[test]
+    fn html_escape_handles_all_special_characters() {
+        assert_eq!(
+            html_escape("<a href=\"x\">&amp;</a>"),
+            "&lt;a href=&quot;x&quot;&gt;&amp;amp;&lt;/a&gt;"
+        );
+    }
+}

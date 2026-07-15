@@ -103,3 +103,85 @@ fn is_first_party(uses: &str) -> bool {
         || uses.starts_with("./")
         || uses.starts_with("../")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{job, uses_step, workflow_with};
+
+    #[test]
+    fn flags_secret_passed_to_third_party_action() {
+        let mut step = uses_step("some-org/build-action@main");
+        step.with = vec![(
+            "api-key".to_string(),
+            "${{ secrets.BUILD_API_KEY }}".to_string(),
+        )];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].finding_type, FindingType::SecretExposure);
+        assert_eq!(findings[0].severity, Severity::High);
+    }
+
+    #[test]
+    fn does_not_flag_secret_passed_to_first_party_action() {
+        let mut step = uses_step("actions/checkout@v4");
+        step.with = vec![("token".to_string(), "${{ secrets.GITHUB_TOKEN }}".to_string())];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn does_not_flag_local_action() {
+        let mut step = uses_step("./local-action");
+        step.with = vec![("token".to_string(), "${{ secrets.GITHUB_TOKEN }}".to_string())];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn flags_multiple_secrets_in_a_single_step() {
+        let mut step = uses_step("some-org/build-action@main");
+        step.with = vec![
+            ("api-key".to_string(), "${{ secrets.API_KEY }}".to_string()),
+            ("token".to_string(), "${{ secrets.GITHUB_TOKEN }}".to_string()),
+        ];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        assert_eq!(analyze(&wf).len(), 2);
+    }
+
+    #[test]
+    fn flags_secret_stored_in_run_step_env_as_informational() {
+        let mut step = crate::test_support::run_step("echo \"$API_KEY\"");
+        step.env = vec![("API_KEY".to_string(), "${{ secrets.API_KEY }}".to_string())];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].severity, Severity::Informational);
+    }
+
+    #[test]
+    fn does_not_flag_env_secret_without_a_run_script() {
+        let mut step = uses_step("actions/checkout@v4");
+        step.env = vec![("API_KEY".to_string(), "${{ secrets.API_KEY }}".to_string())];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn step_without_secrets_produces_no_finding() {
+        let mut step = uses_step("some-org/build-action@main");
+        step.with = vec![("ref".to_string(), "${{ github.sha }}".to_string())];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+}

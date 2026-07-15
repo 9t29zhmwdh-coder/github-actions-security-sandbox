@@ -1,5 +1,7 @@
 pub mod analyzers;
 pub mod parser;
+#[cfg(test)]
+mod test_support;
 
 use anyhow::Result;
 use ghass_core::models::{Finding, FindingSummary, ScanReport, Severity};

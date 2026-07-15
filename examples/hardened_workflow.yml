@@ -29,6 +29,6 @@ jobs:
         run: echo "Hello, you submitted $PR_TITLE"
 
       - name: Build with pinned third-party action
-        uses: some-org/build-action@a4d7a2b1c3e9f0823456789abcdef0123456789ab # v2.1.0
+        uses: some-org/build-action@a4d7a2b1c3e9f0823456789abcdef0123456789a # v2.1.0
         with:
           ref: ${{ github.sha }}
