@@ -93,7 +93,11 @@ th{{background:#f2f2f2}}tr:hover{{background:#f5f5f5}}</style></head>
     )
 }
 
-pub fn to_sarif_stub(report: &ScanReport) -> String {
+/// Full SARIF 2.1.0 output: populated `region.startLine` (best-effort, see
+/// `ghass_scan::line_index`) and a stable `partialFingerprints` hash per
+/// result so tools consuming this (e.g. GitHub code scanning) can dedupe
+/// the same finding across repeated scans.
+pub fn to_sarif(report: &ScanReport) -> String {
     use std::collections::HashSet;
     let mut seen_rule_ids: HashSet<String> = HashSet::new();
     let rules: Vec<serde_json::Value> = report
@@ -117,15 +121,23 @@ pub fn to_sarif_stub(report: &ScanReport) -> String {
         .findings
         .iter()
         .map(|f| {
+            let mut physical_location = serde_json::json!({
+                "artifactLocation": { "uri": f.workflow }
+            });
+            if let Some(line) = f.line {
+                physical_location["region"] = serde_json::json!({
+                    "startLine": line,
+                });
+            }
+
             serde_json::json!({
                 "ruleId": format!("{:?}", f.finding_type),
                 "level": sarif_level(&f.severity),
                 "message": { "text": f.description },
-                "locations": [{
-                    "physicalLocation": {
-                        "artifactLocation": { "uri": f.workflow }
-                    }
-                }]
+                "locations": [{ "physicalLocation": physical_location }],
+                "partialFingerprints": {
+                    "primaryLocationLineHash/v1": fingerprint(f),
+                },
             })
         })
         .collect();
@@ -137,7 +149,7 @@ pub fn to_sarif_stub(report: &ScanReport) -> String {
             "tool": {
                 "driver": {
                     "name": "ghass",
-                    "version": "0.1.0",
+                    "version": env!("CARGO_PKG_VERSION"),
                     "rules": rules,
                 }
             },
@@ -146,6 +158,19 @@ pub fn to_sarif_stub(report: &ScanReport) -> String {
     });
 
     serde_json::to_string_pretty(&sarif).unwrap_or_default()
+}
+
+fn fingerprint(finding: &crate::models::Finding) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+    format!("{:?}", finding.finding_type).hash(&mut hasher);
+    finding.workflow.hash(&mut hasher);
+    finding.job_id.hash(&mut hasher);
+    finding.step_name.hash(&mut hasher);
+    finding.evidence.hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
 }
 
 fn severity_icon(s: &Severity) -> &'static str {
@@ -191,6 +216,7 @@ mod tests {
             evidence: "some evidence".to_string(),
             remediation: "fix it".to_string(),
             cwe: Some("CWE-78".to_string()),
+            line: Some(42),
         }
     }
 
@@ -260,23 +286,49 @@ mod tests {
     }
 
     #[test]
-    fn to_sarif_stub_produces_valid_json_with_expected_shape() {
+    fn to_sarif_produces_valid_json_with_expected_shape() {
         let report = report_with(vec![sample_finding()]);
 
-        let sarif = to_sarif_stub(&report);
+        let sarif = to_sarif(&report);
         let value: serde_json::Value = serde_json::from_str(&sarif).unwrap();
 
         assert_eq!(value["version"], "2.1.0");
+        assert_eq!(value["runs"][0]["tool"]["driver"]["version"], env!("CARGO_PKG_VERSION"));
         let results = value["runs"][0]["results"].as_array().unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0]["level"], "error");
     }
 
     #[test]
-    fn to_sarif_stub_deduplicates_rules_by_finding_type() {
+    fn to_sarif_populates_start_line_when_finding_has_one() {
+        let report = report_with(vec![sample_finding()]);
+
+        let sarif = to_sarif(&report);
+        let value: serde_json::Value = serde_json::from_str(&sarif).unwrap();
+
+        let region =
+            &value["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"];
+        assert_eq!(region["startLine"], 42);
+    }
+
+    #[test]
+    fn to_sarif_omits_region_when_finding_has_no_line() {
+        let mut finding = sample_finding();
+        finding.line = None;
+        let report = report_with(vec![finding]);
+
+        let sarif = to_sarif(&report);
+        let value: serde_json::Value = serde_json::from_str(&sarif).unwrap();
+
+        let physical_location = &value["runs"][0]["results"][0]["locations"][0]["physicalLocation"];
+        assert!(physical_location.get("region").is_none());
+    }
+
+    #[test]
+    fn to_sarif_deduplicates_rules_by_finding_type() {
         let report = report_with(vec![sample_finding(), sample_finding()]);
 
-        let sarif = to_sarif_stub(&report);
+        let sarif = to_sarif(&report);
         let value: serde_json::Value = serde_json::from_str(&sarif).unwrap();
 
         let rules = value["runs"][0]["tool"]["driver"]["rules"]
@@ -285,6 +337,17 @@ mod tests {
         assert_eq!(rules.len(), 1);
         let results = value["runs"][0]["results"].as_array().unwrap();
         assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn fingerprint_is_stable_for_identical_findings_and_differs_for_different_evidence() {
+        let a = fingerprint(&sample_finding());
+        let b = fingerprint(&sample_finding());
+        assert_eq!(a, b);
+
+        let mut different = sample_finding();
+        different.evidence = "something else".to_string();
+        assert_ne!(a, fingerprint(&different));
     }
 
     #[test]

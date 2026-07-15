@@ -21,7 +21,13 @@ fn evaluate_rule(rule: &Rule, workflow: &WorkflowFile) -> Vec<Finding> {
                     step: Some(step),
                 };
                 if rule.condition.eval(&ctx) {
-                    findings.push(build_finding(rule, workflow, Some(job.id.clone()), step.name.clone()));
+                    findings.push(build_finding(
+                        rule,
+                        workflow,
+                        Some(job.id.clone()),
+                        step.name.clone(),
+                        step.line,
+                    ));
                 }
             }
         }
@@ -33,7 +39,13 @@ fn evaluate_rule(rule: &Rule, workflow: &WorkflowFile) -> Vec<Finding> {
                 step: None,
             };
             if rule.condition.eval(&ctx) {
-                findings.push(build_finding(rule, workflow, Some(job.id.clone()), None));
+                findings.push(build_finding(
+                    rule,
+                    workflow,
+                    Some(job.id.clone()),
+                    None,
+                    job.line,
+                ));
             }
         }
     } else {
@@ -43,7 +55,7 @@ fn evaluate_rule(rule: &Rule, workflow: &WorkflowFile) -> Vec<Finding> {
             step: None,
         };
         if rule.condition.eval(&ctx) {
-            findings.push(build_finding(rule, workflow, None, None));
+            findings.push(build_finding(rule, workflow, None, None, None));
         }
     }
 
@@ -55,6 +67,7 @@ fn build_finding(
     workflow: &WorkflowFile,
     job_id: Option<String>,
     step_name: Option<String>,
+    line: Option<usize>,
 ) -> Finding {
     Finding {
         workflow: workflow.path.clone(),
@@ -67,6 +80,7 @@ fn build_finding(
         evidence: format!("custom rule '{}' matched", rule.id),
         remediation: rule.remediation.clone(),
         cwe: rule.cwe.clone(),
+        line,
     }
 }
 
@@ -94,6 +108,7 @@ mod tests {
             run: None,
             env: vec![],
             with: vec![],
+            line: None,
         };
         let step_b = Step {
             name: Some("b".to_string()),
@@ -101,6 +116,7 @@ mod tests {
             run: None,
             env: vec![],
             with: vec![],
+            line: None,
         };
         let j = Job {
             id: "build".to_string(),
@@ -108,6 +124,7 @@ mod tests {
             permissions: None,
             steps: vec![step_a, step_b],
             is_reusable_call: false,
+            line: None,
         };
         let wf = workflow_with(vec![j]);
         let rule = Rule {
@@ -130,8 +147,8 @@ mod tests {
     #[test]
     fn job_scoped_rule_reports_once_per_job_not_per_step() {
         let steps = vec![
-            Step { name: Some("s1".to_string()), uses: None, run: None, env: vec![], with: vec![] },
-            Step { name: Some("s2".to_string()), uses: None, run: None, env: vec![], with: vec![] },
+            Step { name: Some("s1".to_string()), uses: None, run: None, env: vec![], with: vec![], line: None },
+            Step { name: Some("s2".to_string()), uses: None, run: None, env: vec![], with: vec![], line: None },
         ];
         let j = Job {
             id: "build".to_string(),
@@ -139,6 +156,7 @@ mod tests {
             permissions: Some(Permissions { write_all: true, ..Default::default() }),
             steps,
             is_reusable_call: false,
+            line: None,
         };
         let wf = workflow_with(vec![j]);
         let rule = Rule {

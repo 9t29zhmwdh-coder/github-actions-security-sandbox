@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0] (2026-07-15)
+
+### Added
+
+- Full SARIF 2.1.0 output (`ghass scan --format sarif`): each result now includes a best-effort `region.startLine`, resolved by a new text-based line index (`ghass_scan::line_index`) that maps parsed jobs/steps back to their source line without needing a span-aware YAML parser. Results also carry a stable `partialFingerprints` hash so tools consuming this output (e.g. GitHub code scanning) can dedupe the same finding across repeated scans. This replaces the previous stub, which always emitted an empty `results` array.
+- `Job`, `Step`, and `Finding` now carry a `line: Option<usize>` field.
+
+### Fixed
+
+- The SARIF `tool.driver.version` field was hardcoded to `"0.1.0"` regardless of the actual release; it now reads `env!("CARGO_PKG_VERSION")` like the rest of the CLI.
+- `examples/hardened_workflow.yml`'s "expected findings: none" example workflow actually produced one `UnpinnedAction` finding, because its placeholder commit SHA was 41 hex characters instead of 40. Fixed the fixture; added a regression test (`ghass-scan/tests/scan_examples.rs`) asserting the hardened example stays clean.
+
+### Testing
+
+- Added 78 unit/integration tests for the 6 previously-untested analyzer modules, the parser, and the report formatters (none of this had test coverage before this release cycle, aside from the custom rule engine).
+
 ## [0.2.0] (2026-07-13)
 
 ### Added

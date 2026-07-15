@@ -51,6 +51,7 @@ fn check_secrets_to_third_party(
                     uses
                 ),
                 cwe: Some("CWE-522: Insufficiently Protected Credentials".to_string()),
+                line: step.line,
             });
         }
     }
@@ -90,6 +91,7 @@ fn check_secret_in_run_env(
                     if the secret is transformed before use."
                     .to_string(),
                 cwe: Some("CWE-532: Insertion of Sensitive Information into Log File".to_string()),
+                line: step.line,
             });
         }
     }

@@ -57,6 +57,7 @@ fn detect_pwn_request(workflow: &WorkflowFile) -> Vec<Finding> {
                                 "CWE-913: Improper Control of Dynamically-Managed Code Resources"
                                     .to_string(),
                             ),
+                            line: step.line,
                         });
                     }
                 }
@@ -91,6 +92,7 @@ fn detect_global_write_permissions(workflow: &WorkflowFile) -> Vec<Finding> {
                 then grant only the specific permissions each job requires."
                 .to_string(),
             cwe: Some("CWE-250: Execution with Unnecessary Privileges".to_string()),
+            line: None,
         });
     }
 
@@ -110,6 +112,7 @@ fn detect_global_write_permissions(workflow: &WorkflowFile) -> Vec<Finding> {
                 and set it to read at the workflow level."
                 .to_string(),
             cwe: Some("CWE-250: Execution with Unnecessary Privileges".to_string()),
+            line: None,
         });
     }
 
@@ -129,6 +132,7 @@ fn detect_global_write_permissions(workflow: &WorkflowFile) -> Vec<Finding> {
                 or labels."
                 .to_string(),
             cwe: Some("CWE-250: Execution with Unnecessary Privileges".to_string()),
+            line: None,
         });
     }
 
@@ -158,6 +162,7 @@ fn detect_job_write_all(workflow: &WorkflowFile) -> Vec<Finding> {
                         matching only what the job steps actually need."
                         .to_string(),
                     cwe: Some("CWE-250: Execution with Unnecessary Privileges".to_string()),
+                    line: job.line,
                 });
             }
         }

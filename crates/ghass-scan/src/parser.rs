@@ -1,3 +1,4 @@
+use crate::line_index::LineIndex;
 use anyhow::{Context, Result};
 use ghass_core::models::{Job, Permissions, Step, WorkflowFile};
 use serde_yaml::Value;
@@ -13,9 +14,10 @@ pub fn parse_workflow_str(content: &str, path: &str) -> Result<WorkflowFile> {
     let value: Value = serde_yaml::from_str(content)
         .with_context(|| format!("Invalid YAML in {}", path))?;
 
+    let line_index = LineIndex::build(content);
     let name = value["name"].as_str().unwrap_or(path).to_string();
     let triggers = extract_triggers(&value);
-    let jobs = extract_jobs(&value);
+    let jobs = extract_jobs(&value, &line_index);
     let global_permissions = extract_permissions(&value["permissions"]);
 
     Ok(WorkflowFile {
@@ -42,21 +44,23 @@ fn extract_triggers(value: &Value) -> Vec<String> {
     }
 }
 
-fn extract_jobs(value: &Value) -> Vec<Job> {
+fn extract_jobs(value: &Value, line_index: &LineIndex) -> Vec<Job> {
     let mut jobs = vec![];
     if let Value::Mapping(map) = &value["jobs"] {
         for (key, job_val) in map {
             let id = key.as_str().unwrap_or("unknown").to_string();
             let runs_on = extract_runs_on(job_val);
             let permissions = extract_permissions(&job_val["permissions"]);
-            let steps = extract_steps(job_val);
+            let steps = extract_steps(job_val, &id, line_index);
             let is_reusable_call = job_val["uses"].as_str().is_some();
+            let line = line_index.job_line(&id);
             jobs.push(Job {
                 id,
                 runs_on,
                 permissions,
                 steps,
                 is_reusable_call,
+                line,
             });
         }
     }
@@ -75,21 +79,23 @@ fn extract_runs_on(job: &Value) -> String {
     }
 }
 
-fn extract_steps(job: &Value) -> Vec<Step> {
+fn extract_steps(job: &Value, job_id: &str, line_index: &LineIndex) -> Vec<Step> {
     let mut steps = vec![];
     if let Value::Sequence(seq) = &job["steps"] {
-        for step_val in seq {
+        for (index, step_val) in seq.iter().enumerate() {
             let name = step_val["name"].as_str().map(String::from);
             let uses = step_val["uses"].as_str().map(String::from);
             let run = step_val["run"].as_str().map(String::from);
             let env = extract_string_map(&step_val["env"]);
             let with = extract_string_map(&step_val["with"]);
+            let line = line_index.step_line(job_id, index);
             steps.push(Step {
                 name,
                 uses,
                 run,
                 env,
                 with,
+                line,
             });
         }
     }
@@ -300,6 +306,25 @@ jobs:
         let result = parse_workflow_str("jobs: [this is not: valid", "wf.yml");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn parsed_jobs_and_steps_carry_line_numbers() {
+        let yaml = "\
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run
+        run: echo hi
+";
+        let wf = parse_workflow_str(yaml, "wf.yml").unwrap();
+
+        assert_eq!(wf.jobs[0].line, Some(2));
+        assert_eq!(wf.jobs[0].steps[0].line, Some(5));
+        assert_eq!(wf.jobs[0].steps[1].line, Some(7));
     }
 
     #[test]
