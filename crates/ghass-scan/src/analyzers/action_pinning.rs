@@ -6,9 +6,13 @@ pub fn analyze(workflow: &WorkflowFile) -> Vec<Finding> {
     for job in &workflow.jobs {
         for step in &job.steps {
             if let Some(uses) = &step.uses {
-                if let Some(finding) =
-                    check_pinning(&workflow.path, &job.id, step.name.as_deref(), uses)
-                {
+                if let Some(finding) = check_pinning(
+                    &workflow.path,
+                    &job.id,
+                    step.name.as_deref(),
+                    uses,
+                    step.line,
+                ) {
                     findings.push(finding);
                 }
             }
@@ -23,6 +27,7 @@ fn check_pinning(
     job_id: &str,
     step_name: Option<&str>,
     uses: &str,
+    line: Option<usize>,
 ) -> Option<Finding> {
     if uses.starts_with("./") || uses.starts_with("../") {
         return None;
@@ -77,6 +82,7 @@ fn check_pinning(
         cwe: Some(
             "CWE-829: Inclusion of Functionality from Untrusted Control Sphere".to_string(),
         ),
+        line,
     })
 }
 

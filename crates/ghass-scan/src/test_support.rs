@@ -23,6 +23,7 @@ pub fn job(id: &str, steps: Vec<Step>) -> Job {
         permissions: None,
         steps,
         is_reusable_call: false,
+        line: None,
     }
 }
 
@@ -33,6 +34,7 @@ pub fn run_step(run: &str) -> Step {
         run: Some(run.to_string()),
         env: vec![],
         with: vec![],
+        line: None,
     }
 }
 
@@ -43,6 +45,7 @@ pub fn uses_step(uses: &str) -> Step {
         run: None,
         env: vec![],
         with: vec![],
+        line: None,
     }
 }
 

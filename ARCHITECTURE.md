@@ -50,7 +50,7 @@ Input (YAML file or directory)
 Pure domain layer. No I/O, no YAML parsing.
 
 - `models.rs`: `WorkflowFile`, `Job`, `Step`, `Permissions`, `Finding`, `ScanReport`, `FindingType`, `Severity`
-- `report.rs`: Serialization functions (`to_json`, `to_markdown`, `to_html_stub`, `to_sarif_stub`)
+- `report.rs`: Serialization functions (`to_json`, `to_markdown`, `to_html_stub`, `to_sarif`)
 
 ### ghass-scan
 

@@ -244,6 +244,7 @@ mod tests {
             permissions: None,
             steps,
             is_reusable_call: false,
+            line: None,
         }
     }
 
@@ -254,6 +255,7 @@ mod tests {
             run: run.map(String::from),
             env: vec![],
             with: vec![],
+            line: None,
         }
     }
 

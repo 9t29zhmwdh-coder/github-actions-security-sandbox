@@ -28,6 +28,7 @@ pub fn analyze(workflow: &WorkflowFile) -> Vec<Finding> {
                     Use Just-in-Time (JIT) runners where possible."
                     .to_string(),
                 cwe: Some("CWE-653: Insufficient Isolation or Compartmentalization".to_string()),
+                line: job.line,
             });
         }
     }

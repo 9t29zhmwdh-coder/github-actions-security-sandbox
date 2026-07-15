@@ -75,7 +75,7 @@ fn main() -> Result<()> {
                 "json" => report::to_json(&scan)?,
                 "md" => report::to_markdown(&scan),
                 "html" => report::to_html_stub(&scan),
-                "sarif" => report::to_sarif_stub(&scan),
+                "sarif" => report::to_sarif(&scan),
                 _ => render_table(&scan),
             };
 

@@ -17,6 +17,10 @@ pub struct Job {
     pub permissions: Option<Permissions>,
     pub steps: Vec<Step>,
     pub is_reusable_call: bool,
+    /// Best-effort 1-indexed source line of this job's key in the workflow
+    /// file. `None` if the line index could not locate it (see
+    /// `ghass_scan::line_index`).
+    pub line: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +30,8 @@ pub struct Step {
     pub run: Option<String>,
     pub env: Vec<(String, String)>,
     pub with: Vec<(String, String)>,
+    /// Best-effort 1-indexed source line of this step's `-` list item.
+    pub line: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -107,6 +113,10 @@ pub struct Finding {
     pub evidence: String,
     pub remediation: String,
     pub cwe: Option<String>,
+    /// Best-effort 1-indexed source line, propagated from the offending
+    /// job/step (see `Job::line`/`Step::line`). `None` for workflow-level
+    /// findings that are not tied to a specific job or step.
+    pub line: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

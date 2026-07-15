@@ -45,6 +45,7 @@ pub fn analyze(workflow: &WorkflowFile) -> Vec<Finding> {
                             and use `$PR_TITLE` in the run step instead."
                             .to_string(),
                         cwe: Some("CWE-78: OS Command Injection".to_string()),
+                        line: step.line,
                     });
                 }
             }

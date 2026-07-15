@@ -1,4 +1,5 @@
 pub mod analyzers;
+mod line_index;
 pub mod parser;
 #[cfg(test)]
 mod test_support;
