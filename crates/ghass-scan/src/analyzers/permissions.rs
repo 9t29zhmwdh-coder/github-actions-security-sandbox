@@ -165,3 +165,136 @@ fn detect_job_write_all(workflow: &WorkflowFile) -> Vec<Finding> {
 
     findings
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{job, perms, uses_step, workflow_with, workflow_with_triggers};
+
+    fn checkout_step_with_pr_head_ref() -> ghass_core::models::Step {
+        let mut step = uses_step("actions/checkout@v4");
+        step.with = vec![(
+            "ref".to_string(),
+            "${{ github.event.pull_request.head.ref }}".to_string(),
+        )];
+        step
+    }
+
+    #[test]
+    fn detects_pwn_request_pattern() {
+        let wf = workflow_with_triggers(
+            vec!["pull_request_target".to_string()],
+            vec![job("build", vec![checkout_step_with_pr_head_ref()])],
+        );
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].finding_type, FindingType::PwnRequest);
+        assert_eq!(findings[0].severity, Severity::Critical);
+    }
+
+    #[test]
+    fn no_pwn_request_without_pull_request_target_trigger() {
+        let wf = workflow_with(vec![job("build", vec![checkout_step_with_pr_head_ref()])]);
+
+        assert!(detect_pwn_request(&wf).is_empty());
+    }
+
+    #[test]
+    fn no_pwn_request_when_checkout_uses_default_ref() {
+        let wf = workflow_with_triggers(
+            vec!["pull_request_target".to_string()],
+            vec![job("build", vec![uses_step("actions/checkout@v4")])],
+        );
+
+        assert!(detect_pwn_request(&wf).is_empty());
+    }
+
+    #[test]
+    fn no_pwn_request_when_trigger_present_but_no_checkout_step() {
+        let wf = workflow_with_triggers(
+            vec!["pull_request_target".to_string()],
+            vec![job("build", vec![uses_step("actions/setup-node@v4")])],
+        );
+
+        assert!(detect_pwn_request(&wf).is_empty());
+    }
+
+    #[test]
+    fn flags_global_write_all() {
+        let mut wf = workflow_with(vec![]);
+        wf.global_permissions = Some(perms(None, None, true));
+
+        let findings = detect_global_write_permissions(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert!(findings[0].evidence.contains("write-all"));
+    }
+
+    #[test]
+    fn flags_global_contents_write() {
+        let mut wf = workflow_with(vec![]);
+        wf.global_permissions = Some(perms(Some("write"), None, false));
+
+        let findings = detect_global_write_permissions(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].severity, Severity::High);
+    }
+
+    #[test]
+    fn flags_global_pull_requests_write_as_medium() {
+        let mut wf = workflow_with(vec![]);
+        wf.global_permissions = Some(perms(None, Some("write"), false));
+
+        let findings = detect_global_write_permissions(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].severity, Severity::Medium);
+    }
+
+    #[test]
+    fn flags_contents_and_pull_requests_write_together() {
+        let mut wf = workflow_with(vec![]);
+        wf.global_permissions = Some(perms(Some("write"), Some("write"), false));
+
+        assert_eq!(detect_global_write_permissions(&wf).len(), 2);
+    }
+
+    #[test]
+    fn no_findings_without_global_permissions_block() {
+        let wf = workflow_with(vec![]);
+
+        assert!(detect_global_write_permissions(&wf).is_empty());
+    }
+
+    #[test]
+    fn read_only_global_permissions_produce_no_finding() {
+        let mut wf = workflow_with(vec![]);
+        wf.global_permissions = Some(perms(Some("read"), Some("read"), false));
+
+        assert!(detect_global_write_permissions(&wf).is_empty());
+    }
+
+    #[test]
+    fn flags_job_level_write_all() {
+        let mut j = job("build", vec![]);
+        j.permissions = Some(perms(None, None, true));
+        let wf = workflow_with(vec![j]);
+
+        let findings = detect_job_write_all(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].job_id.as_deref(), Some("build"));
+    }
+
+    #[test]
+    fn job_without_write_all_is_not_flagged() {
+        let mut j = job("build", vec![]);
+        j.permissions = Some(perms(Some("read"), None, false));
+        let wf = workflow_with(vec![j]);
+
+        assert!(detect_job_write_all(&wf).is_empty());
+    }
+}

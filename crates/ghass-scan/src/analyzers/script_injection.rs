@@ -72,3 +72,87 @@ fn find_injection_evidence(script: &str) -> Vec<String> {
 
     found
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{job, run_step, workflow_with};
+
+    #[test]
+    fn flags_known_pattern_in_run_step() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![run_step(
+                "echo ${{ github.event.pull_request.title }}",
+            )],
+        )]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].finding_type, FindingType::ScriptInjection);
+        assert_eq!(findings[0].severity, Severity::Critical);
+        assert_eq!(
+            findings[0].evidence,
+            "${{ github.event.pull_request.title }}"
+        );
+    }
+
+    #[test]
+    fn flags_generic_event_prefix_when_no_known_pattern_matches() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![run_step("echo ${{ github.event.review.body }}")],
+        )]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].evidence, "${{ github.event....}");
+    }
+
+    #[test]
+    fn flags_inputs_prefix() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![run_step("echo ${{ inputs.untrusted }}")],
+        )]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].evidence, "${{ inputs....}");
+    }
+
+    #[test]
+    fn safe_workflow_using_intermediate_env_var_is_not_flagged() {
+        let mut step = run_step("echo \"$PR_TITLE\"");
+        step.env = vec![(
+            "PR_TITLE".to_string(),
+            "${{ github.event.pull_request.title }}".to_string(),
+        )];
+        let wf = workflow_with(vec![job("build", vec![step])]);
+
+        // env values are not scanned by this analyzer, only the run script text.
+        let findings = analyze(&wf);
+
+        assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn step_without_run_script_is_ignored() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![crate::test_support::uses_step("actions/checkout@v4")],
+        )]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn clean_run_script_produces_no_finding() {
+        let wf = workflow_with(vec![job("build", vec![run_step("echo hello")])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+}

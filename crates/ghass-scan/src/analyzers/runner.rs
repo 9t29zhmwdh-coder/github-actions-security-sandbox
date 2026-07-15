@@ -34,3 +34,57 @@ pub fn analyze(workflow: &WorkflowFile) -> Vec<Finding> {
 
     findings
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{job, workflow_with};
+
+    fn job_with_runner(runs_on: &str) -> ghass_core::models::Job {
+        let mut j = job("build", vec![]);
+        j.runs_on = runs_on.to_string();
+        j
+    }
+
+    #[test]
+    fn flags_self_hosted_runner() {
+        let wf = workflow_with(vec![job_with_runner("self-hosted")]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].finding_type, FindingType::SelfHostedRunner);
+        assert_eq!(findings[0].severity, Severity::Medium);
+    }
+
+    #[test]
+    fn flags_self_hosted_case_insensitively() {
+        let wf = workflow_with(vec![job_with_runner("Self-Hosted")]);
+
+        assert_eq!(analyze(&wf).len(), 1);
+    }
+
+    #[test]
+    fn flags_self_hosted_with_extra_labels() {
+        let wf = workflow_with(vec![job_with_runner("[self-hosted, linux, x64]")]);
+
+        assert_eq!(analyze(&wf).len(), 1);
+    }
+
+    #[test]
+    fn does_not_flag_github_hosted_runner() {
+        let wf = workflow_with(vec![job_with_runner("ubuntu-latest")]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn multiple_jobs_are_each_evaluated() {
+        let wf = workflow_with(vec![
+            job_with_runner("self-hosted"),
+            job_with_runner("windows-latest"),
+        ]);
+
+        assert_eq!(analyze(&wf).len(), 1);
+    }
+}

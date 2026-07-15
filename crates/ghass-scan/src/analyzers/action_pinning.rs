@@ -79,3 +79,100 @@ fn check_pinning(
         ),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{job, uses_step, workflow_with};
+
+    #[test]
+    fn flags_mutable_branch_reference_as_high() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![uses_step("some-org/build-action@main")],
+        )]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].finding_type, FindingType::UnpinnedAction);
+        assert_eq!(findings[0].severity, Severity::High);
+    }
+
+    #[test]
+    fn flags_master_and_latest_as_high() {
+        for reference in ["some-org/a@master", "some-org/b@latest"] {
+            let wf = workflow_with(vec![job("build", vec![uses_step(reference)])]);
+            let findings = analyze(&wf);
+            assert_eq!(findings[0].severity, Severity::High, "{reference}");
+        }
+    }
+
+    #[test]
+    fn flags_semantic_version_tag_as_medium() {
+        let wf = workflow_with(vec![job("build", vec![uses_step("actions/checkout@v4")])]);
+
+        let findings = analyze(&wf);
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].severity, Severity::Medium);
+    }
+
+    #[test]
+    fn does_not_flag_full_commit_sha() {
+        let sha = "a".repeat(40);
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![uses_step(&format!("actions/checkout@{sha}"))],
+        )]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn does_not_flag_local_action_reference() {
+        let wf = workflow_with(vec![job("build", vec![uses_step("./local-action")])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn does_not_flag_reusable_workflow_reference() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![uses_step(
+                "org/repo/.github/workflows/reusable.yml@main",
+            )],
+        )]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn does_not_flag_docker_reference_missing_a_tag() {
+        // No '@' at all -> rfind('@') returns None -> skipped, not crashed.
+        let wf = workflow_with(vec![job("build", vec![uses_step("docker://alpine")])]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn flags_unpinned_docker_reference() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![uses_step("docker://alpine@latest")],
+        )]);
+
+        assert_eq!(analyze(&wf).len(), 1);
+    }
+
+    #[test]
+    fn step_without_uses_is_ignored() {
+        let wf = workflow_with(vec![job(
+            "build",
+            vec![crate::test_support::run_step("echo hi")],
+        )]);
+
+        assert!(analyze(&wf).is_empty());
+    }
+}
