@@ -3,7 +3,7 @@
   <h1>GitHub Actions Security Sandbox Simulator</h1>
 </div>
 
-🇩🇪 [Deutsche Version](README.de.md)
+[🇩🇪 Deutsche Version](README.de.md)
 
 **Static analysis and attack simulation for GitHub Actions workflows. Detects injection vectors, supply chain risks, excessive permissions and secret exposure. Generates prioritized findings with remediation guidance.**
 
