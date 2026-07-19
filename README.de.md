@@ -101,6 +101,14 @@ Das Tool ist als Rust-Workspace mit drei Crates aufgebaut:
 
 ---
 
+## GitHub-Action-Integration
+
+Kopiere `.github/workflows/ghass-check-template.yml` aus diesem Repository in dein eigenes Projekt, um Workflows automatisch bei jedem Push und wöchentlich nach Zeitplan zu scannen. Die Findings werden als SARIF-Ergebnisse an GitHub Advanced Security übermittelt.
+
+Siehe [docs/attack_vectors.md](docs/attack_vectors.md) für Hardening-Muster zu jedem Finding-Typ.
+
+---
+
 ## Keine Credentials erforderlich
 
 Dieses Tool führt ausschliesslich lokale statische Analyse durch. Es liest YAML-Dateien von der Festplatte. Es werden keine API-Credentials benötigt oder verwendet.
