@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.1] - 2026-07-20
+
+### Changed
+
+- OpenSSF Scorecard workflow and badge.
+- `copilot-instructions.md` for consistent AI-assisted contributions.
+- Unified the EN/DE language-switch link format and restored a missing README section in German.
+- Split the README's security/CI badges onto their own line, separate from the platform/tech/AI badges (they were rendering as a single merged line).
+
 ## [0.3.0] (2026-07-15)
 
 ### Added
