@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.3.1] - 2026-07-28
+## [0.3.2] - 2026-07-28
 
 ### Added
 
@@ -9,6 +9,11 @@
 ### Fixed
 
 - `actions/checkout` pins were inconsistent across workflows. All now use v7.0.1 with the full version in the comment, per `standards/ci-cd.md` section 2.
+
+
+### Note
+
+- Version 0.3.1 was tagged and released on 2026-07-20 without the crate manifests being bumped; they stayed on 0.3.0. This release corrects that: the manifests now carry the version, inherited from a single `[workspace.package]`. `release-process.md` section 2 asks for the version to be bumped in every file that carries one and for the intended tag to be checked against existing ones before tagging, which is what surfaced this.
 
 ## [0.3.1] - 2026-07-20
 
