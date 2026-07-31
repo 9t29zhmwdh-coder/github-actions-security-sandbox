@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.6] - 2026-07-31
+
+### Changed
+
+- Both READMEs now open with three named workflow mistakes and what each one hands an attacker, rather than with the vulnerability classes the scanner detects. A short paragraph is honest that a private repository with trusted contributors has little of this surface, so the findings there stay theoretical.
+
+---
+
 ## [0.3.5] - 2026-07-29
 
 ### Security

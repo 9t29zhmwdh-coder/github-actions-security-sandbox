@@ -5,9 +5,29 @@
 
 [🇩🇪 Deutsche Version](README.de.md)
 
-**Static analysis and attack simulation for GitHub Actions workflows. Detects injection vectors, supply chain risks, excessive permissions and secret exposure. Generates prioritized findings with remediation guidance.**
+**Reads your workflow files and points at the lines a stranger could use to steal your secrets.**
 
-Aligned with [Microsoft Security DevOps](https://learn.microsoft.com/en-us/azure/defender-for-cloud/azure-devops-extension) principles. SARIF 2.1.0 output integrates natively with [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) code scanning for enterprise security workflows.
+A workflow is a shell script with your deployment credentials in scope, and
+the ways it goes wrong do not look like bugs. `${{ github.event.issue.title }}`
+inside a `run:` block is command execution by anyone who can open an issue.
+`pull_request_target` on untrusted code hands the fork your secrets. An action
+pinned to a tag is a promise its owner can break.
+
+```
+ghass scan .github/workflows      what is exploitable, ranked
+ghass scan --format sarif         into GitHub Advanced Security
+```
+
+It reads the YAML and nothing else: it never contacts GitHub and never runs a
+workflow. SARIF 2.1.0 output goes straight into [GitHub Advanced Security
+(GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security)
+code scanning. Aligned with [Microsoft Security
+DevOps](https://learn.microsoft.com/en-us/azure/defender-for-cloud/azure-devops-extension)
+principles.
+
+**Not for you if** your repository is private and every contributor is
+trusted. Most of what this finds needs an attacker who can open a pull request
+or an issue, and without that surface the findings are theoretical.
 
 [![CI](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions) [![CodeQL](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/security/code-scanning) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/9t29zhmwdh-coder/github-actions-security-sandbox/badge)](https://securityscorecards.dev/viewer/?uri=github.com/9t29zhmwdh-coder/github-actions-security-sandbox) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13706/badge)](https://www.bestpractices.dev/projects/13706)
 
