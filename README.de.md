@@ -5,9 +5,33 @@
 
 [🇬🇧 English Version](README.md)
 
-**Statische Analyse und Angriffssimulation für GitHub Actions Workflows. Erkennt Injection-Vektoren, Supply-Chain-Risiken, überprivilegierte Berechtigungen und Secret-Exposition. Generiert priorisierte Findings mit konkreten Behebungshinweisen.**
+**Liest deine Workflow-Dateien und zeigt auf die Zeilen, über die ein Fremder an deine Secrets kommt.**
 
-Ausgerichtet an den [Microsoft Security DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension) Grundsätzen. Der SARIF 2.1.0-Output integriert sich nativ in [GitHub Advanced Security (GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) für Enterprise Security Workflows.
+Ein Workflow ist ein Shell-Skript, in dessen Reichweite deine
+Deployment-Zugangsdaten liegen, und die Wege, auf denen das schiefgeht, sehen
+nicht nach Fehlern aus. `${{ github.event.issue.title }}` in einem `run:`-Block
+ist Befehlsausführung für jeden, der ein Issue aufmachen kann.
+`pull_request_target` auf ungeprüftem Code reicht dem Fork deine Secrets. Eine
+Action, die auf einen Tag gepinnt ist, ist ein Versprechen, das ihr Besitzer
+brechen kann.
+
+```
+ghass scan .github/workflows      was ausnutzbar ist, sortiert
+ghass scan --format sarif         rein in GitHub Advanced Security
+```
+
+Es liest das YAML und sonst nichts: kein Kontakt zu GitHub, kein Workflow wird
+ausgeführt. Der SARIF-2.1.0-Output geht direkt ins Code-Scanning von [GitHub
+Advanced Security
+(GHAS)](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security).
+Ausgerichtet an den [Microsoft Security
+DevOps](https://learn.microsoft.com/de-de/azure/defender-for-cloud/azure-devops-extension)
+Grundsätzen.
+
+**Nichts für dich, wenn** dein Repository privat ist und du allen Beitragenden
+vertraust. Das meiste, was hier gefunden wird, braucht einen Angreifer, der
+einen Pull Request oder ein Issue aufmachen kann; ohne diese Angriffsfläche
+bleiben die Funde theoretisch.
 
 [![CI](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions) [![CodeQL](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/9t29zhmwdh-coder/github-actions-security-sandbox/security/code-scanning) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/9t29zhmwdh-coder/github-actions-security-sandbox/badge)](https://securityscorecards.dev/viewer/?uri=github.com/9t29zhmwdh-coder/github-actions-security-sandbox) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13706/badge)](https://www.bestpractices.dev/projects/13706)
 
