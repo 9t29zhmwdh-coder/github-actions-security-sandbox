@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.7] - 2026-08-03
+
+### Changed
+
+- `tabled` 0.15 to 0.21. The derive attributes and `Table::new` are unchanged across the jump, and the findings table renders exactly as before.
+- `github/codeql-action` 4.37.3 to 4.37.4 and `actions/attest` 4.2.0 to 4.2.1, merged separately and carried by this version. All pinned SHAs were checked against the tags their comments name.
+
+### Added
+
+- A test that holds the exact rendered findings table. That table is what a user sees after a scan, so a bump that shifts a border character or a column width is visible to everyone and to no compiler. It was written and made to pass under 0.15 first, then run unchanged under 0.21.
+
+---
+
 ## [0.3.6] - 2026-07-31
 
 ### Changed

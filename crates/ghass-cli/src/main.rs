@@ -146,3 +146,32 @@ fn parse_severity_score(s: &str) -> u8 {
         _ => 1,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Haelt die gerenderte Tabelle fest, damit ein Versionssprung von `tabled`
+    /// das Ausgabeformat nicht unbemerkt verschiebt. Die Befundtabelle ist das,
+    /// was der Nutzer von einem Scan zu sehen bekommt; ein veraendertes
+    /// Rahmenzeichen faellt keinem Compiler auf.
+    #[test]
+    fn befundtabelle_bleibt_im_format() {
+        let zeilen = vec![FindingRow {
+            severity: "CRITICAL".into(),
+            finding_type: "UnpinnedAction".into(),
+            job: "build".into(),
+            title: "Action referenced by tag".into(),
+        }];
+
+        let erwartet = concat!(
+            "+----------+----------------+-------+--------------------------+\n",
+            "| Severity | Type           | Job   | Title                    |\n",
+            "+----------+----------------+-------+--------------------------+\n",
+            "| CRITICAL | UnpinnedAction | build | Action referenced by tag |\n",
+            "+----------+----------------+-------+--------------------------+",
+        );
+
+        assert_eq!(Table::new(zeilen).to_string(), erwartet);
+    }
+}
