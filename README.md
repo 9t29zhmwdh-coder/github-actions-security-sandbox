@@ -49,12 +49,14 @@ or an issue, and without that surface the findings are theoretical.
 
 | Attack Vector | Severity | CWE |
 |---|---|---|
-| Script injection via untrusted context expressions | Critical | CWE-78 |
-| Pwn Request (pull_request_target + PR head checkout) | Critical | CWE-913 |
-| Excessive permissions (write-all, contents: write) | High | CWE-250 |
+| Script injection: outsider-controlled fields (issue/PR title and body, comments, commit messages, branch names) in `run` or `actions/github-script` | Critical | CWE-78 |
+| Script injection: workflow inputs in `run` or `github-script` (only writers can set them) | Medium | CWE-78 |
+| Pwn Request: `pull_request_target` checking out the PR's code (head ref or SHA, `refs/pull/N/merge`, `gh pr checkout`, `git fetch … pull/…`) | Critical | CWE-913 |
+| Excessive permissions: `write-all`, workflow-level `contents: write`; job-level write only under triggers outsiders control | High | CWE-250 |
+| No `permissions:` declared (token gets the repository default) | Low | CWE-250 |
 | Secrets passed to third-party actions | High | CWE-522 |
 | Unpinned actions (mutable branch reference) | High | CWE-829 |
-| Unpinned actions (semantic version tag) | Medium | CWE-829 |
+| Unpinned actions (semantic version tag); Docker images without a `sha256` digest | Medium to High | CWE-829 |
 | Self-hosted runner without isolation | Medium | CWE-653 |
 | Secret values in environment variables | Informational | CWE-532 |
 

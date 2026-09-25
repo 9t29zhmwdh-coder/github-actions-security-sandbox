@@ -1,11 +1,41 @@
 use ghass_core::models::{Finding, FindingType, Severity, WorkflowFile};
 
+/// Neither the workflow nor a job declares permissions: the token gets the
+/// repository default, which is read/write in older repositories and organisations.
+fn detect_missing_permissions(workflow: &WorkflowFile) -> Vec<Finding> {
+    if workflow.global_permissions.is_some() {
+        return vec![];
+    }
+    workflow.jobs.iter()
+        .filter(|job| job.permissions.is_none() && !job.is_reusable_call)
+        .map(|job| Finding {
+            workflow: workflow.path.clone(),
+            job_id: Some(job.id.clone()),
+            step_name: None,
+            finding_type: FindingType::ExcessivePermissions,
+            severity: Severity::Low,
+            title: format!("No permissions declared for job '{}'", job.id),
+            description: "Without a `permissions:` block the GITHUB_TOKEN gets the repository \
+                default, which is read/write in repositories created before February 2023 and \
+                wherever an organisation keeps that setting."
+                .to_string(),
+            evidence: format!("jobs.{}: no permissions, no workflow-level permissions", job.id),
+            remediation: "Add `permissions: contents: read` at the top of the workflow and \
+                widen it per job where needed."
+                .to_string(),
+            cwe: Some("CWE-250: Execution with Unnecessary Privileges".to_string()),
+            line: job.line,
+        })
+        .collect()
+}
+
 pub fn analyze(workflow: &WorkflowFile) -> Vec<Finding> {
     let mut findings = vec![];
 
     findings.extend(detect_pwn_request(workflow));
     findings.extend(detect_global_write_permissions(workflow));
     findings.extend(detect_job_write_all(workflow));
+    findings.extend(detect_missing_permissions(workflow));
 
     findings
 }
@@ -21,11 +51,7 @@ fn detect_pwn_request(workflow: &WorkflowFile) -> Vec<Finding> {
         for step in &job.steps {
             if let Some(uses) = &step.uses {
                 if uses.starts_with("actions/checkout") {
-                    let pr_head_ref = step.with.iter().find(|(k, v)| {
-                        k == "ref"
-                            && (v.contains("github.event.pull_request.head")
-                                || v.contains("github.head_ref"))
-                    });
+                    let pr_head_ref = step.with.iter().find(|(k, v)| k == "ref" && is_pr_code_ref(v));
 
                     if let Some((_, ref_value)) = pr_head_ref {
                         findings.push(Finding {
@@ -34,7 +60,7 @@ fn detect_pwn_request(workflow: &WorkflowFile) -> Vec<Finding> {
                             step_name: step.name.clone(),
                             finding_type: FindingType::PwnRequest,
                             severity: Severity::Critical,
-                            title: "Pwn Request: pull_request_target checks out PR head branch"
+                            title: "Pwn Request: pull_request_target checks out the pull request's code"
                                 .to_string(),
                             description: format!(
                                 "Workflow is triggered by 'pull_request_target' and job '{}' checks \
@@ -65,7 +91,47 @@ fn detect_pwn_request(workflow: &WorkflowFile) -> Vec<Finding> {
         }
     }
 
+    // `gh pr checkout` or fetching `pull/N/head` in a run step does the same.
+    for job in &workflow.jobs {
+        for step in &job.steps {
+            let Some(run) = &step.run else { continue };
+            if !(run.contains("gh pr checkout") || run.contains("refs/pull/")
+                || (run.contains("git fetch") && run.contains("pull/")))
+            {
+                continue;
+            }
+            findings.push(Finding {
+                workflow: workflow.path.clone(),
+                job_id: Some(job.id.clone()),
+                step_name: step.name.clone(),
+                finding_type: FindingType::PwnRequest,
+                severity: Severity::Critical,
+                title: "Pwn Request: pull_request_target fetches PR code in a run step".to_string(),
+                description: format!(
+                    "Workflow is triggered by 'pull_request_target' and job '{}' fetches the \
+                     contributor's code with a shell command. Whatever runs afterwards executes \
+                     their code with write permissions and access to the repository secrets.",
+                    job.id
+                ),
+                evidence: run.lines().find(|l| l.contains("pull") || l.contains("pr checkout")).unwrap_or(run).trim().to_string(),
+                remediation: "Run untrusted code only in a `pull_request` workflow without secrets."
+                    .to_string(),
+                cwe: Some("CWE-913: Improper Control of Dynamically-Managed Code Resources".to_string()),
+                line: step.line,
+            });
+        }
+    }
+
     findings
+}
+
+/// A checkout ref that points at the contributor's code: the head branch or
+/// SHA, the PR number, or GitHub's merge ref `refs/pull/N/merge`.
+fn is_pr_code_ref(value: &str) -> bool {
+    ["github.event.pull_request.head", "github.head_ref", "refs/pull/",
+     "github.event.pull_request.number", "github.event.number", "merge_commit_sha"]
+        .iter()
+        .any(|needle| value.contains(needle))
 }
 
 fn detect_global_write_permissions(workflow: &WorkflowFile) -> Vec<Finding> {
@@ -144,6 +210,40 @@ fn detect_job_write_all(workflow: &WorkflowFile) -> Vec<Finding> {
 
     for job in &workflow.jobs {
         if let Some(perms) = &job.permissions {
+            // Scoping write to the one job that needs it (a release job) is the
+            // recommended practice. It becomes dangerous when outsiders decide
+            // what the job runs: triggers carrying a fork's code or text.
+            let untrusted_trigger = workflow.triggers.iter().any(|t| {
+                matches!(t.as_str(), "pull_request_target" | "issue_comment" | "issues" | "workflow_run" | "discussion_comment")
+            });
+            for (scope, value, severity) in [
+                ("contents", perms.contents.as_deref(), Severity::High),
+                ("pull-requests", perms.pull_requests.as_deref(), Severity::Medium),
+            ] {
+                if untrusted_trigger && value == Some("write") && !perms.write_all {
+                    findings.push(Finding {
+                        workflow: workflow.path.clone(),
+                        job_id: Some(job.id.clone()),
+                        step_name: None,
+                        finding_type: FindingType::ExcessivePermissions,
+                        severity,
+                        title: format!("Job-level permission: {scope} write in '{}'", job.id),
+                        description: format!(
+                            "Job '{}' grants {scope}: write in a workflow that outsiders can \
+                             trigger ({}). Any injection or checked-out fork code in the job \
+                             can use that write access.",
+                            job.id,
+                            workflow.triggers.join(", ")
+                        ),
+                        evidence: format!("jobs.{}.permissions.{scope}: write", job.id),
+                        remediation: "Grant write only to the job that needs it, and keep \
+                            third-party actions out of that job where possible."
+                            .to_string(),
+                        cwe: Some("CWE-250: Execution with Unnecessary Privileges".to_string()),
+                        line: job.line,
+                    });
+                }
+            }
             if perms.write_all {
                 findings.push(Finding {
                     workflow: workflow.path.clone(),
@@ -192,10 +292,11 @@ mod tests {
             vec![job("build", vec![checkout_step_with_pr_head_ref()])],
         );
 
-        let findings = analyze(&wf);
+        let findings: Vec<_> = analyze(&wf).into_iter()
+            .filter(|f| f.finding_type == FindingType::PwnRequest)
+            .collect();
 
         assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].finding_type, FindingType::PwnRequest);
         assert_eq!(findings[0].severity, Severity::Critical);
     }
 
@@ -301,5 +402,46 @@ mod tests {
         let wf = workflow_with(vec![j]);
 
         assert!(detect_job_write_all(&wf).is_empty());
+    }
+
+    #[test]
+    fn pwn_request_via_merge_ref_or_pr_number() {
+        for r in ["refs/pull/${{ github.event.pull_request.number }}/merge", "${{ github.event.pull_request.head.sha }}"] {
+            let mut step = crate::test_support::uses_step("actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11");
+            step.with.push(("ref".into(), r.into()));
+            let wf = workflow_with_triggers(vec!["pull_request_target".into()], vec![job("t", vec![step])]);
+            assert!(analyze(&wf).iter().any(|f| f.finding_type == FindingType::PwnRequest), "{r}");
+        }
+    }
+
+    #[test]
+    fn pwn_request_via_gh_pr_checkout() {
+        let wf = workflow_with_triggers(
+            vec!["pull_request_target".into()],
+            vec![job("t", vec![crate::test_support::run_step("gh pr checkout ${{ github.event.number }}\nnpm test")])],
+        );
+        assert!(analyze(&wf).iter().any(|f| f.finding_type == FindingType::PwnRequest));
+    }
+
+    #[test]
+    fn job_level_contents_write_is_flagged_only_under_untrusted_triggers() {
+        let mut j = job("deploy", vec![]);
+        j.permissions = Some(perms(Some("write"), None, false));
+        let release = workflow_with_triggers(vec!["push".into()], vec![j.clone()]);
+        assert!(!analyze(&release).iter().any(|f| f.title.contains("contents write")), "a release job needs it");
+        let exposed = workflow_with_triggers(vec!["issue_comment".into()], vec![j]);
+        assert!(analyze(&exposed).iter().any(|f| f.severity == Severity::High && f.title.contains("contents write")));
+    }
+
+    #[test]
+    fn missing_permissions_are_a_low_finding_but_an_empty_block_is_fine() {
+        let wf = workflow_with(vec![job("t", vec![])]);
+        let found = analyze(&wf);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].severity, Severity::Low);
+
+        let mut declared = workflow_with(vec![job("t", vec![])]);
+        declared.global_permissions = Some(Default::default());
+        assert!(analyze(&declared).is_empty());
     }
 }

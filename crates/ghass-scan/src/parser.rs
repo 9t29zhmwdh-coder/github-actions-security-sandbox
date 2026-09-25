@@ -121,19 +121,14 @@ fn extract_permissions(value: &Value) -> Option<Permissions> {
             ..Default::default()
         }),
         Value::String(_) => Some(Permissions::default()),
-        Value::Mapping(_) => {
-            let contents = value["contents"].as_str().map(String::from);
-            let pull_requests = value["pull-requests"].as_str().map(String::from);
-            if contents.is_none() && pull_requests.is_none() {
-                None
-            } else {
-                Some(Permissions {
-                    contents,
-                    pull_requests,
-                    write_all: false,
-                })
-            }
-        }
+        // Any mapping is a declaration, `{}` included (the strictest one). Only a
+        // missing key means "repository default"; treating `{}` or
+        // `{ packages: write }` as missing made the two indistinguishable.
+        Value::Mapping(_) => Some(Permissions {
+            contents: value["contents"].as_str().map(String::from),
+            pull_requests: value["pull-requests"].as_str().map(String::from),
+            write_all: false,
+        }),
         _ => None,
     }
 }
@@ -288,10 +283,11 @@ jobs:
     }
 
     #[test]
-    fn empty_permissions_mapping_yields_none() {
+    fn empty_permissions_mapping_is_a_declaration() {
         let wf = parse_workflow_str("permissions: {}\njobs: {}", "wf.yml").unwrap();
 
-        assert!(wf.global_permissions.is_none());
+        let perms = wf.global_permissions.expect("{} declares no permissions");
+        assert!(!perms.write_all && perms.contents.is_none());
     }
 
     #[test]
