@@ -36,6 +36,35 @@ fn check_pinning(
         return None;
     }
 
+    // `docker://image@sha256:<64 hex>` is pinned; a tag or no tag at all
+    // (which means `latest`) can change under you. This was inverted: a bare
+    // image passed and a digest-pinned one was flagged.
+    if let Some(image) = uses.strip_prefix("docker://") {
+        if let Some((_, digest)) = image.split_once("@sha256:") {
+            if digest.len() == 64 && digest.chars().all(|c| c.is_ascii_hexdigit()) {
+                return None;
+            }
+        }
+        let tag = image.rsplit_once(':').map(|(_, t)| t).filter(|t| !t.contains('/'));
+        let (severity, what) = match tag {
+            None | Some("latest") => (Severity::High, "no fixed version (implicitly `latest`)".to_string()),
+            Some(t) => (Severity::Medium, format!("the mutable tag `{t}`")),
+        };
+        return Some(Finding {
+            workflow: workflow_path.to_string(),
+            job_id: Some(job_id.to_string()),
+            step_name: step_name.map(String::from),
+            finding_type: FindingType::UnpinnedAction,
+            severity,
+            title: format!("Docker image not pinned to a digest: {}", uses),
+            description: format!("'{uses}' uses {what}. The image behind it can be replaced at any time."),
+            evidence: uses.to_string(),
+            remediation: "Pin the image by digest: `docker://image@sha256:<64 hex>`.".to_string(),
+            cwe: Some("CWE-829: Inclusion of Functionality from Untrusted Control Sphere".to_string()),
+            line,
+        });
+    }
+
     let at_pos = uses.rfind('@')?;
     let action_ref = &uses[..at_pos];
     let version = &uses[at_pos + 1..];
@@ -155,11 +184,24 @@ mod tests {
     }
 
     #[test]
-    fn does_not_flag_docker_reference_missing_a_tag() {
-        // No '@' at all -> rfind('@') returns None -> skipped, not crashed.
+    fn docker_image_without_tag_is_latest_and_flagged() {
         let wf = workflow_with(vec![job("build", vec![uses_step("docker://alpine")])]);
+        let findings = analyze(&wf);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].severity, Severity::High);
+    }
 
+    #[test]
+    fn docker_image_pinned_by_digest_is_not_flagged() {
+        let digest = "0".repeat(64);
+        let wf = workflow_with(vec![job("build", vec![uses_step(&format!("docker://alpine@sha256:{digest}"))])]);
         assert!(analyze(&wf).is_empty());
+    }
+
+    #[test]
+    fn docker_image_with_tag_is_medium() {
+        let wf = workflow_with(vec![job("build", vec![uses_step("docker://ghcr.io/org/tool:1.2")])]);
+        assert_eq!(analyze(&wf)[0].severity, Severity::Medium);
     }
 
     #[test]

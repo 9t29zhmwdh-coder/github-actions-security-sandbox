@@ -53,12 +53,14 @@ bleiben die Funde theoretisch.
 
 | Angriffsvektor | Schweregrad | CWE |
 |---|---|---|
-| Script-Injection via nicht vertrauenswürdige Context-Expressions | Critical | CWE-78 |
-| Pwn Request (pull_request_target + PR-Head-Checkout) | Critical | CWE-913 |
-| Überprivilegierte Berechtigungen (write-all, contents: write) | High | CWE-250 |
+| Script-Injection: von aussen steuerbare Felder (Titel und Text von Issues/PRs, Kommentare, Commit-Nachrichten, Branch-Namen) in `run` oder `actions/github-script` | Critical | CWE-78 |
+| Script-Injection: Workflow-Eingaben in `run` oder `github-script` (nur Personen mit Schreibrechten können sie setzen) | Medium | CWE-78 |
+| Pwn Request: `pull_request_target` checkt den Code des PR aus (Head-Ref oder SHA, `refs/pull/N/merge`, `gh pr checkout`, `git fetch … pull/…`) | Critical | CWE-913 |
+| Übermässige Berechtigungen: `write-all`, `contents: write` auf Workflow-Ebene; Schreibrechte pro Job nur bei Auslösern, die Fremde steuern | High | CWE-250 |
+| Kein `permissions:` angegeben (Token erhält den Repository-Standard) | Low | CWE-250 |
 | Secrets an Drittanbieter-Actions weitergegeben | High | CWE-522 |
 | Nicht-gepinnte Actions (veränderlicher Branch-Verweis) | High | CWE-829 |
-| Nicht-gepinnte Actions (semantischer Versions-Tag) | Medium | CWE-829 |
+| Nicht-gepinnte Actions (semantischer Versions-Tag); Docker-Images ohne `sha256`-Digest | Medium bis High | CWE-829 |
 | Self-Hosted Runner ohne Isolation | Medium | CWE-653 |
 | Secret-Werte in Umgebungsvariablen | Informational | CWE-532 |
 

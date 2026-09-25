@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0] - 2026-09-25
+
+Checked against crafted workflows (real attacks and safe patterns) and against the workflows of 30 repositories; two real attack paths were missed and several findings were wrong.
+
+### Fixed
+
+- **Script injection in `actions/github-script` was not detected.** Its `script` input runs as JavaScript; an expression there is code injection just like in `run`.
+- **Expressions without spaces were missed** (`${{github.event.issue.title}}`): matching looked for exact strings. Expressions are now parsed, including `format(...)`, `toJSON(github.event.pull_request)` and `commits[0].message`.
+- **Every `github.event.*` value counted as injection**, including values nobody outside can set (`pull_request.number`, `head.sha`, `repository.full_name`). Only the fields GitHub Security Lab lists as attacker-controlled are Critical now; workflow inputs, which only writers can set, are Medium.
+- **Pwn Request via the merge ref was missed** (`refs/pull/N/merge`, `github.event.number`, `merge_commit_sha`), as was fetching PR code in a shell step (`gh pr checkout`, `git fetch … pull/…`).
+- **Docker pinning was inverted:** `docker://alpine` (implicitly `latest`) passed and an image pinned by `sha256` digest was flagged.
+- `permissions: {}` (the strictest setting) and blocks with other scopes such as `packages: write` were read as "no permissions declared".
+
+### Added
+
+- Job-level `contents: write` / `pull-requests: write` in workflows that outsiders can trigger (`pull_request_target`, `issue_comment`, `issues`, `workflow_run`, `discussion_comment`). A release job with scoped write access stays clean, as recommended.
+- Low finding when neither the workflow nor a job declares `permissions:`: the token then gets the repository default, read/write in older repositories.
+
 ## [0.3.7] - 2026-08-03
 
 ### Changed
