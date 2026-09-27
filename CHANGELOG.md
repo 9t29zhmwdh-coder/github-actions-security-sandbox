@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.1] - 2026-09-27
+
+### Changed
+
+Dependency and CI updates merged since v0.4.0, each with green checks:
+
+- chore(deps): bump clap in the cargo group across 1 directory (#38)
+- chore(ci): bump the actions group across 1 directory with 6 updates (#41)
+
+---
+
 ## [0.4.0] - 2026-09-25
 
 Checked against crafted workflows (real attacks and safe patterns) and against the workflows of 30 repositories; two real attack paths were missed and several findings were wrong.
