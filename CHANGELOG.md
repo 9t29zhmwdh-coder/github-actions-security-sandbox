@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.2] - 2026-09-30
+
+### Changed
+
+Dependency and CI updates merged since v0.4.1, each with green checks:
+
+- chore(ci): bump the actions group with 3 updates (#45)
+
+---
+
 ## [0.4.1] - 2026-09-27
 
 ### Changed
