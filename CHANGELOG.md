@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.3] - 2026-09-30
+
+### Changed
+
+Dependency and CI updates merged since v0.4.2, each with green checks:
+
+- chore(deps): bump tabled from 0.21.0 to 0.22.0 (#44)
+
+---
+
 ## [0.4.2] - 2026-09-30
 
 ### Changed
